@@ -1,0 +1,16 @@
+/dados_dropbox/
+/logs/
+/temp/
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+env/
+venv/
+.env
