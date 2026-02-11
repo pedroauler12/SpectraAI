@@ -364,6 +364,55 @@ def criar_grid_visualizacao(
     return fig
 
 
+<<<<<<< Updated upstream
+=======
+def adicionar_marcador_mineral(
+    ax: plt.Axes,
+    marker_x: float,
+    marker_y: float,
+    mineral_type: Optional[str] = None,
+    color: str = "red",
+    markersize: int = 10,
+    markeredgewidth: int = 2,
+) -> None:
+    """
+    Adiciona um marcador circular ao redor de um ponto específico em um subplot,
+    sem cobrir o ponto exato.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        O objeto Axes (subplot) onde o marcador será plotado.
+    marker_x : float
+        Coordenada X (coluna) do marcador dentro do subplot.
+    marker_y : float
+        Coordenada Y (linha) do marcador dentro do subplot.
+    mineral_type : str, optional
+        Tipo de mineral associado ao ponto, para possível uso futuro (não usado diretamente no plot).
+    color : str, optional
+        Cor do marcador (padrão: 'red').
+    markersize : int, optional
+        Tamanho do marcador (padrão: 10).
+    markeredgewidth : int, optional
+        Largura da borda do marcador (padrão: 2).
+
+    Returns
+    -------
+    None
+    """
+    # 'o' para círculo, 'fillstyle='none'' para círculo vazado
+    ax.plot(
+        marker_x,
+        marker_y,
+        marker="o",
+        fillstyle="none",
+        color=color,
+        markersize=markersize,
+        markeredgewidth=markeredgewidth,
+    )
+
+
+>>>>>>> Stashed changes
 def analysis_questions() -> List[str]:
     """
     Perguntas de analise e vieses para documentar no notebook.
