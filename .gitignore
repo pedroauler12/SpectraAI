@@ -16,4 +16,5 @@ venv/
 .env
 .venv/
 .pixels_dataset.csv
-/pixels_dataset.csv
+pixels_dataset.csv
+extracted_codes.json 
