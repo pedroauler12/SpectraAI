@@ -283,6 +283,133 @@ def plot_spatial_heatmap(
     return ax
 
 
+def criar_grid_visualizacao(
+    image_data_list: Sequence[np.ndarray],
+    main_title: Optional[str] = None,
+    subplot_titles: Optional[Sequence[str]] = None,
+    figsize_mult: float = 5.0,
+    cmap: str = "gray",
+    interpolation: str = "nearest",
+) -> plt.Figure:
+    """
+    Cria e retorna um grid de visualizacao de imagens usando matplotlib.
+
+    Funciona com listas de arrays 2D ou 3D (para visualizar bandas individuais).
+    O layout eh ajustado automaticamente para um grid aproximadamente quadrado.
+
+    Parameters
+    ----------
+    image_data_list : list of np.ndarray
+        Uma lista de arrays NumPy 2D (altura, largura), onde cada array eh uma imagem ou banda.
+    main_title : str, optional
+        Titulo principal da figura (suptitle). Default eh None.
+    subplot_titles : list of str, optional
+        Lista de titulos para cada subplot. Se nao fornecida, sera usado "Imagem {i+1}".
+    figsize_mult : float, optional
+        Multiplicador para o tamanho da figura. Default eh 5.0 (figsize = (num_cols*5, num_rows*5)).
+    cmap : str, optional
+        Colormap para exibicao. Default eh 'gray'.
+    interpolation : str, optional
+        Tipo de interpolacao na exibicao. Default eh 'nearest'.
+
+    Returns
+    -------
+    fig : plt.Figure
+        A figura matplotlib criada.
+    """
+    if not image_data_list:
+        print("A lista de imagens esta vazia. Nada para exibir.")
+        return None
+
+    num_subplots = len(image_data_list)
+
+    # Calcula numero de linhas e colunas para um layout aproximadamente quadrado
+    num_cols = int(np.ceil(np.sqrt(num_subplots)))
+    num_rows = int(np.ceil(num_subplots / num_cols))
+
+    # Cria figura e subplots
+    figsize = (num_cols * figsize_mult, num_rows * figsize_mult)
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=figsize, squeeze=False)
+
+    # Plota cada imagem
+    for i, img_array in enumerate(image_data_list):
+        row_idx = i // num_cols
+        col_idx = i % num_cols
+        ax = axs[row_idx, col_idx]
+
+        ax.imshow(img_array, cmap=cmap, interpolation=interpolation)
+
+        # Define titulo do subplot
+        if subplot_titles and i < len(subplot_titles):
+            ax.set_title(subplot_titles[i])
+        else:
+            ax.set_title(f"Imagem {i + 1}")
+
+        ax.axis("off")
+
+    # Oculta subplots vazios
+    for i in range(num_subplots, num_rows * num_cols):
+        row_idx = i // num_cols
+        col_idx = i % num_cols
+        axs[row_idx, col_idx].set_visible(False)
+
+    # Adiciona titulo principal se fornecido
+    if main_title:
+        fig.suptitle(main_title, fontsize=16, fontweight="bold")
+        rect = [0, 0.03, 1, 0.95]
+    else:
+        rect = [0, 0, 1, 1]
+
+    fig.tight_layout(rect=rect)
+    return fig
+
+
+def adicionar_marcador_mineral(
+    ax: plt.Axes,
+    marker_x: float,
+    marker_y: float,
+    mineral_type: Optional[str] = None,
+    color: str = "red",
+    markersize: int = 10,
+    markeredgewidth: int = 2,
+) -> None:
+    """
+    Adiciona um marcador circular ao redor de um ponto específico em um subplot,
+    sem cobrir o ponto exato.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        O objeto Axes (subplot) onde o marcador será plotado.
+    marker_x : float
+        Coordenada X (coluna) do marcador dentro do subplot.
+    marker_y : float
+        Coordenada Y (linha) do marcador dentro do subplot.
+    mineral_type : str, optional
+        Tipo de mineral associado ao ponto, para possível uso futuro (não usado diretamente no plot).
+    color : str, optional
+        Cor do marcador (padrão: 'red').
+    markersize : int, optional
+        Tamanho do marcador (padrão: 10).
+    markeredgewidth : int, optional
+        Largura da borda do marcador (padrão: 2).
+
+    Returns
+    -------
+    None
+    """
+    # 'o' para círculo, 'fillstyle='none'' para círculo vazado
+    ax.plot(
+        marker_x,
+        marker_y,
+        marker="o",
+        fillstyle="none",
+        color=color,
+        markersize=markersize,
+        markeredgewidth=markeredgewidth,
+    )
+
+
 def analysis_questions() -> List[str]:
     """
     Perguntas de analise e vieses para documentar no notebook.

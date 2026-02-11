@@ -14,7 +14,6 @@ __pycache__/
 env/
 venv/
 .env
+*.csv
 .venv/
-.pixels_dataset.csv
-pixels_dataset.csv
-extracted_codes.json 
+

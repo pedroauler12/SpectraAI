@@ -1,0 +1,10 @@
+numpy
+pandas
+rasterio
+pytest
+pytest-cov
+matplotlib
+seaborn
+scikit-learn
+pyproj
+earthaccess
