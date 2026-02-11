@@ -364,8 +364,6 @@ def criar_grid_visualizacao(
     return fig
 
 
-<<<<<<< Updated upstream
-=======
 def adicionar_marcador_mineral(
     ax: plt.Axes,
     marker_x: float,
@@ -412,7 +410,6 @@ def adicionar_marcador_mineral(
     )
 
 
->>>>>>> Stashed changes
 def analysis_questions() -> List[str]:
     """
     Perguntas de analise e vieses para documentar no notebook.
