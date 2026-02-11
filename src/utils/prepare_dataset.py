@@ -7,6 +7,10 @@ def prepare_dataset(dataset_path: str, extracted_codes_path: str):
     :param extracted_codes_path: Path to the JSON file containing positive and negative codes.
     :return: X (DataFrame of features), y (Series of labels)
     """
+    import json
+    import re
+    import pandas as pd
+
     df = pd.read_csv(dataset_path)
 
     # Load extracted codes
