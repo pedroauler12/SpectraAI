@@ -410,6 +410,154 @@ def adicionar_marcador_mineral(
     )
 
 
+def plot_band_coefficient_variation(
+    df: pd.DataFrame,
+    band_col: str = "banda",
+    value_col: str = "cv",
+    subsistema_col: str = "subsistema",
+    figsize: Tuple[int, int] = (14, 6),
+    title: str = "Variabilidade Relativa (CV%) de Cada Banda",
+    ax: Optional[plt.Axes] = None,
+) -> plt.Axes:
+    """
+    Plota coeficiente de variacao (CV%) por banda com cores por subsistema.
+    
+    Mostra qual banda tem maior variacao relativa, colorida conforme subsistema
+    (util para comparar estabilidade entre bandas espectrais).
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame com colunas de banda, CV, e subsistema.
+    band_col : str
+        Nome da coluna com identificacao de banda.
+    value_col : str
+        Nome da coluna com valores de CV%.
+    subsistema_col : str
+        Nome da coluna com subsistema (VNIR/SWIR/TIR).
+    figsize : tuple
+        Tamanho da figura (width, height).
+    title : str
+        Titulo do grafico.
+    ax : matplotlib.axes.Axes, optional
+        Axes para plotar. Se None, cria nova figura+axes.
+        
+    Returns
+    -------
+    matplotlib.axes.Axes
+        Eixo com o grafico.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=figsize)
+    
+    # Mapa de cores por subsistema
+    color_map = {'VNIR': '#1f77b4', 'SWIR': '#ff7f0e', 'TIR': '#2ca02c'}
+    colors = [color_map.get(s, '#808080') for s in df[subsistema_col]]
+    
+    # Plotar barras
+    x_pos = range(len(df))
+    ax.bar(x_pos, df[value_col], color=colors, alpha=0.8, edgecolor='black', linewidth=1.2)
+    
+    # Configuracoes
+    ax.set_xlabel('Banda', fontsize=11)
+    ax.set_ylabel('Coeficiente de Variacao (%)', fontsize=11)
+    ax.set_title(title, fontsize=13, fontweight='bold')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(df[band_col], rotation=45, ha='right')
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    
+    # Legenda de subsistemas
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=color_map[s], label=s, edgecolor='black')
+        for s in sorted(df[subsistema_col].unique())
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', framealpha=0.95)
+    
+    return ax
+
+
+def plot_subsystem_summary(
+    df: pd.DataFrame,
+    subsistema_col: str = "subsistema",
+    value_col: str = "media",
+    error_col: str = "desvio_padrao",
+    figsize: Tuple[int, int] = (10, 6),
+    title: str = "Resumo de Valores por Subsistema",
+    ax: Optional[plt.Axes] = None,
+) -> plt.Axes:
+    """
+    Plota resumo agregado por subsistema com barras de erro.
+    
+    Agrupa dados por subsistema e exibe media com desvio padrao como erro.
+    Util para comparar caracteristicas entre subsistemas ASTER (VNIR/SWIR/TIR).
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame com dados aggregados ou nao.
+    subsistema_col : str
+        Nome da coluna com subsistema.
+    value_col : str
+        Nome da coluna com valores (media, etc).
+    error_col : str
+        Nome da coluna com erro/desvio padrao.
+    figsize : tuple
+        Tamanho da figura (width, height).
+    title : str
+        Titulo do grafico.
+    ax : matplotlib.axes.Axes, optional
+        Axes para plotar. Se None, cria nova figura+axes.
+        
+    Returns
+    -------
+    matplotlib.axes.Axes
+        Eixo com o grafico.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=figsize)
+    
+    # Agregar por subsistema
+    grouped = df.groupby(subsistema_col).agg({
+        value_col: 'mean',
+        error_col: 'mean'
+    }).reset_index()
+    
+    subsistemas = grouped[subsistema_col].values
+    values = grouped[value_col].values
+    errors = grouped[error_col].values
+    
+    # Mapa de cores
+    color_map = {'VNIR': '#1f77b4', 'SWIR': '#ff7f0e', 'TIR': '#2ca02c'}
+    colors = [color_map.get(s, '#808080') for s in subsistemas]
+    
+    # Plotar barras com erros
+    x_pos = range(len(subsistemas))
+    bars = ax.bar(
+        x_pos, values, yerr=errors, 
+        capsize=12, 
+        color=colors, 
+        alpha=0.7, 
+        edgecolor='black', 
+        linewidth=2,
+        error_kw={'elinewidth': 2, 'capthick': 2}
+    )
+    
+    # Configuracoes
+    ax.set_ylabel(f'{value_col.capitalize()} (com ±{error_col})', fontsize=11)
+    ax.set_title(title, fontsize=13, fontweight='bold')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(subsistemas, fontsize=11)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    
+    # Adicionar valores nas barras
+    for i, (val, err) in enumerate(zip(values, errors)):
+        ax.text(i, val + err + max(values)*0.05, f'{val:.1f}±{err:.1f}',
+                ha='center', va='bottom', fontweight='bold', fontsize=10)
+    
+    return ax
+
+
 def analysis_questions() -> List[str]:
     """
     Perguntas de analise e vieses para documentar no notebook.
