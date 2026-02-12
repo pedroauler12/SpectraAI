@@ -1,0 +1,32 @@
+[
+  {
+    "subsistema":"SWIR",
+    "quantidade_bandas":1,
+    "media_geral":54.73,
+    "mediana_geral":54.73,
+    "variacao_entre_bandas":null,
+    "desvio_medio":35.87,
+    "cv_medio":65.54,
+    "total_pixels":5509731
+  },
+  {
+    "subsistema":"TIR",
+    "quantidade_bandas":10,
+    "media_geral":978.65,
+    "mediana_geral":949.3,
+    "variacao_entre_bandas":138.02,
+    "desvio_medio":743.63,
+    "cv_medio":75.99,
+    "total_pixels":7635300
+  },
+  {
+    "subsistema":"VNIR",
+    "quantidade_bandas":4,
+    "media_geral":32.93,
+    "mediana_geral":34.48,
+    "variacao_entre_bandas":4.22,
+    "desvio_medio":26.73,
+    "cv_medio":81.51,
+    "total_pixels":109948320
+  }
+]
