@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-02-12T10:08:28.527166",
-  "total_bandas": 14,
+  "timestamp": "2026-02-12T18:37:00.158643",
+  "total_bandas": 9,
   "subsistemas": {
     "VNIR": {
       "total_bandas": 3,
       "bandas": [
         "B01",
         "B02",
-        "B03"
+        "B03N"
       ],
-      "media_global": 119.98873333333334,
-      "desvio_medio": 21.964766666666666,
-      "cv_medio": 18.349266666666665,
-      "intervalo": [
-        27.6296,
-        218.5399
-      ]
+      "min_global": 0.0,
+      "max_global": 710.0,
+      "media_global": 82.66105072671638,
+      "mediana_global": 91.66666666666667,
+      "desvio_medio": 43.009748638223506,
+      "cv_medio": 53.863300380870214,
+      "iqr_medio": 43.0
     },
     "SWIR": {
       "total_bandas": 6,
@@ -27,39 +27,40 @@
         "B08",
         "B09"
       ],
-      "media_global": 165.0743,
-      "desvio_medio": 26.56651666666667,
-      "cv_medio": 16.16201666666667,
-      "intervalo": [
-        32.8255,
-        301.0637
-      ]
-    },
-    "TIR": {
-      "total_bandas": 5,
-      "bandas": [
-        "B10",
-        "B11",
-        "B12",
-        "B13",
-        "B14"
-      ],
-      "media_global": 220.07049999999998,
-      "desvio_medio": 31.998699999999996,
-      "cv_medio": 14.556920000000002,
-      "intervalo": [
-        88.8455,
-        366.0688
-      ]
+      "min_global": 0.0,
+      "max_global": 888.0,
+      "media_global": 140.1993437878498,
+      "mediana_global": 163.5,
+      "desvio_medio": 69.88402917038472,
+      "cv_medio": 49.80794163331755,
+      "iqr_medio": 57.666666666666664
     }
   },
   "resumo_geral": {
-    "media_global": 175.05460714285712,
-    "desvio_medio": 27.52049285714286,
-    "cv_medio": 16.057464285714282,
+    "media_global": 121.01991276747201,
+    "desvio_medio": 60.925935659664304,
+    "cv_medio": 51.15972788250178,
     "intervalo_global": [
-      27.6296,
-      366.0688
+      0.0,
+      888.0
     ]
-  }
+  },
+  "colunas_exportadas": [
+    "subsistema",
+    "banda",
+    "arquivo",
+    "pixels_validos",
+    "media",
+    "mediana",
+    "desvio_padrao",
+    "minimo",
+    "percentil_25",
+    "percentil_50",
+    "percentil_75",
+    "maximo",
+    "cv",
+    "iqr",
+    "mad"
+  ],
+  "versao_estatisticas_schema": "1.0"
 }
