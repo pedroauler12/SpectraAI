@@ -28,43 +28,36 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 ---
 
 ## 👥 Grupo
-**Nome do grupo aqui**
+**g01 — SpectraAI**
 
 ---
 
-## 👨‍🎓 Integrantes: 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 1</a>
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 2</a>
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 3</a> 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 4</a> 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 5</a>
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 6</a> 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do integrante 7</a>
+## 👨‍🎓 Integrantes:
+- Drielly Farias
+- Eduardo Rizk
+- Giovanna Vieira
+- Larissa Souza
+- Mateus Pereira
+- Pedro Auler
 
 ## 👩‍🏫 Professores:
-### Orientador(a) 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do orientador</a>
+### Orientador(a)
+- Ana Cristina dos Santos
 ### Instrutores
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do instrutor 1</a>
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do instrutor 2</a> 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do instrutor 3</a> 
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do instrutor 4</a>
-- <a href="https://www.linkedin.com/in/victorbarq/">Nome do instrutor 5</a> 
-
+- Cesar Cavini Almiñana
+- Filipe Gonçalves de Souza Nogueira da Silva
+- Pedro Marins Freire Teberga
+- Maria Cristina Nogueira Gramani
+- Jose Erinaldo da Fonseca
+- Rodolfo Riyoei Goya
 
 ---
 
 ## 📜 Descrição do Projeto
 
-Apresente um **resumo executivo** do projeto, descrevendo:
+O projeto SpectraAI busca identificar áreas com potencial de ocorrência de Terras Raras a partir de dados multiespectrais de satélite (ASTER), reduzindo incerteza operacional na priorização de alvos de prospecção para a Frontera Minerals.
 
-- o problema a ser resolvido  
-- o contexto do parceiro/mercado  
-- a abordagem técnica proposta  
-- o impacto esperado da solução  
-
-**Limite:** 1–2 parágrafos curtos (até ~6 linhas cada).  
-Seja objetivo e evite detalhes técnicos extensos.
+A abordagem técnica combina pipeline de dados geoespaciais, construção de dataset para modelagem supervisionada, baselines clássicos de Machine Learning e evolução para modelos de Deep Learning, sempre com protocolo experimental reprodutível e comparação objetiva por métricas.
 
 ---
 
@@ -84,24 +77,26 @@ Ao final deste módulo, o grupo deverá ser capaz de:
 
 Defina metas técnicas claras e mensuráveis para o seu sistema.
 
-- objetivo 1
-- objetivo 2
-- objetivo 3
+- construir e validar um baseline clássico robusto para classificação (A02)
+- comparar de forma justa modelos clássicos e modelos de Deep Learning nas sprints seguintes
+- manter pipeline reprodutível com avaliação em treino/validação/teste e análise crítica de erros
 
 
 ## 📁 Estrutura do Repositório
 
 ```bash
-├── artefatos/ → entregas formais de cada Sprint
-├── artigo/    → artigo científico (markdown + PDF)
-├── src/       → código modular reutilizável (.py)
-├── notebooks/ → exploração, experimentos e narrativa
-├── data/      → dados de entrada (não versionar arquivos grandes)
-├── models/    → modelos treinados e checkpoints leves
-├── outputs/   → métricas, gráficos e resultados gerados
-├── slides/    → apresentações do projeto
-├── assets/    → imagens, logos e recursos estáticos
-├── requirements.txt
+├── artefatos/             # entregas formais de cada sprint
+├── artigo/                # artigo científico (markdown + PDF)
+├── src/                   # código modular reutilizável (.py)
+├── notebooks/             # exploração, experimentos e narrativa
+├── data/                  # dados de entrada
+├── models/                # modelos treinados/checkpoints
+├── outputs/               # métricas, gráficos e resultados gerados
+├── slides/                # apresentações do projeto
+├── assets/                # imagens, logos e recursos estáticos
+├── testes/                # testes automatizados
+├── Makefile
+├── requirements-dev.txt
 └── README.md
 ```
 
@@ -155,19 +150,25 @@ cd <repo>
 
 ### 2️⃣ Criar ambiente
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -U pip
+python -m pip install -r requirements-dev.txt
 ```
 
-### 3️⃣ Executar notebooks
+### 3️⃣ Executar testes
+```bash
+make test
+```
+
+### 4️⃣ Executar notebooks
 ```bash
 jupyter notebook
 ```
 
-### 4️⃣ Executar pipeline
+### 5️⃣ Executar baseline clássico (A02)
 ```bash
-python src/train.py
+jupyter notebook artefatos/a02_baseline_classico/a02_baseline_classico.ipynb
 ```
 ---
 
@@ -176,7 +177,7 @@ python src/train.py
 ### Sprint 1 — Entendimento do problema e baseline clássico
 - Análise exploratória dos dados (EDA)
 - Pipeline inicial de pré-processamento
-- Implementação de modelo baseline clássico (ML tradicional)
+- Implementação e avaliação de baseline clássico (ML tradicional)
 
 ### Sprint 2 — Baseline Deep Learning
 - Implementação de rede densa (MLP)
@@ -204,7 +205,7 @@ python src/train.py
 
 ## 🤝 Boas Práticas de Trabalho em Equipe
 
-Este projeto adota práticas profissionais de engenharia e pesquisa.  
+Este projeto adota práticas profissionais de engenharia e pesquisa.
 Espera-se que o time:
 
 ### 📌 Organização técnica
@@ -231,10 +232,10 @@ Espera-se que o time:
 
 ## 📚 Tecnologias
 - Python
-- PyTorch / TensorFlow
 - Scikit-Learn
 - Pandas / NumPy
 - Matplotlib / Seaborn
+- Rasterio / PyProj
 - Jupyter Notebook
 
 ---
