@@ -5,7 +5,7 @@ from rasterio.windows import Window
 
 from .encontrar_arquivo_aster import encontrar_arquivo_aster
 
-def recortar_banda_da_amostra(numero_amostra, band_index, df, aster_source_dir):
+def recortar_banda_da_amostra(numero_amostra, band_index, df, aster_source_dir, return_coords=False):
     """
     Extrai um chip de 128x128 pixels de uma imagem ASTER para uma amostra específica.
     
@@ -29,12 +29,17 @@ def recortar_banda_da_amostra(numero_amostra, band_index, df, aster_source_dir):
     aster_source_dir : str
         Caminho para o diretório contendo as imagens ASTER.
         Espera-se estrutura: {aster_source_dir}/{numero_amostra}/chip_2000m_multiband.tif
+    return_coords : bool, optional
+        Se True, retorna tupla (chip, ponto_y, ponto_x) com coordenadas reais do ponto no chip.
+        Se False (padrão), retorna apenas o chip para compatibilidade. Default: False
     
     Returns
     -------
-    np.ndarray
-        Array NumPy bidimensional com shape (128, 128) contendo os valores
-        dos pixels para a banda específica. Retorna None em caso de erro.
+    np.ndarray or tuple
+        Se return_coords=False: Array NumPy bidimensional com shape (128, 128)
+        Se return_coords=True: Tupla (chip, ponto_y, ponto_x) onde ponto_y/x são as 
+                              coordenadas reais do ponto dentro do chip
+        Retorna None em caso de erro.
     
     Examples
     --------
@@ -45,15 +50,23 @@ def recortar_banda_da_amostra(numero_amostra, band_index, df, aster_source_dir):
     ...     aster_source_dir='/path/to/aster/images/'
     ... )
     >>> print(band_chip.shape)  # (128, 128)
-    >>> import matplotlib.pyplot as plt
-    >>> plt.imshow(band_chip, cmap='gray')
-    >>> plt.show()
+    
+    >>> # Com coordenadas reais do ponto
+    >>> chip, py, px = recortar_banda_da_amostra(
+    ...     numero_amostra=1001,
+    ...     band_index=0,
+    ...     df=df_amostras,
+    ...     aster_source_dir='/path/to/aster/images/',
+    ...     return_coords=True
+    ... )
+    >>> print(f"Ponto em: ({py:.1f}, {px:.1f})")  # Coordenadas reais dentro do chip
     
     Notes
     -----
     - O tamanho esperado do chip é 128x128 pixels
     - Se o arquivo ASTER não for encontrado, a função retorna None
     - Se a banda não existir na imagem, a função retorna None
+    - As coordenadas retornadas com return_coords=True levam em conta deslocamentos de borda
     """
 
     chip_dimension = 128
@@ -121,8 +134,15 @@ def recortar_banda_da_amostra(numero_amostra, band_index, df, aster_source_dir):
             # Preenche com zeros se o chip extraído for menor que chip_dimension
             padded_chip = np.zeros((chip_dimension, chip_dimension), dtype=image_band_chip.dtype)
             padded_chip[:image_band_chip.shape[0], :image_band_chip.shape[1]] = image_band_chip
-
-            return padded_chip.astype(np.float32)
+            
+            # Calcula a posição real do ponto original dentro do chip padded
+            point_y_in_chip = row_orig - window_min_row
+            point_x_in_chip = col_orig - window_min_col
+            
+            if return_coords:
+                return padded_chip.astype(np.float32), float(point_y_in_chip), float(point_x_in_chip)
+            else:
+                return padded_chip.astype(np.float32)
 
     except Exception as e:
         print(f"Erro ao processar amostra {numero_amostra}: {str(e)}")
