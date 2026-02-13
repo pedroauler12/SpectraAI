@@ -1,0 +1,1 @@
+imagens, e recursos visuais
