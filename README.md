@@ -184,6 +184,12 @@ jupyter notebook artefatos/a02_baseline_classico/a02_baseline_classico.ipynb
 - Avaliação experimental comparativa (baseline clássico × MLP)
 - Artigo científico — Versão 1 (fundamentação e metodologia inicial)
 
+#### Entrega 2B — Funções de ativação da MLP
+- `ReLU` nas camadas ocultas: acelera convergência e reduz saturação de gradiente.
+- `Sigmoid` na saída para classificação binária: gera probabilidade no intervalo `[0, 1]`.
+- `Softmax` na saída para classificação multiclasse: normaliza probabilidades para soma 1 entre classes.
+- Implementação em: `src/models/mlp_activations.py`.
+
 ### Sprint 3 — CNN e análise de desempenho
 - Implementação de CNN simples
 - Avaliação experimental ampliada
@@ -260,4 +266,3 @@ A reutilização total ou parcial do código, dados ou materiais deve respeitar 
 ---
 
 ✨ **Inteli — Instituto de Tecnologia e Liderança**
-
