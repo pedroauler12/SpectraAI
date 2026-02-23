@@ -38,7 +38,7 @@ A otimização de hiperparâmetros foi realizada via **GridSearchCV**, utilizand
 
 Dada a natureza exploratória do problema, o limiar de decisão ($\tau$) não foi fixado em 0.5. Em vez disso:
 
-1. O modelo gerou scores contínuos $s \in [0, 1]$.
+1. O modelo gerou scores contínuos.
 2. O limiar ótimo foi selecionado no conjunto de validação através da maximização do **F1-Score** na curva Precision-Recall.
 3. As métricas finais (F1, Precision, Recall, ROC-AUC e PR-AUC) foram calculadas exclusivamente no conjunto de teste isolado.
 
