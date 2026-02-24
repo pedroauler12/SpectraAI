@@ -33,13 +33,9 @@ def prepare_dataset(dataset_path: str, extracted_codes_path: str):
 
     df = pd.concat([df, image_id.rename('image_id'), label.rename('label')], axis=1)
 
-    # Drop non-feature columns and separate X and y
-    X = df.drop(
-        columns=[
-            'path', 'filename', 'count', 'height', 'width', 'dtype',
-            'crs', 'transform', 'image_id', 'label'
-        ]
-    )
+    # Select feature columns
+    feature_cols = [c for c in df.columns if c.startswith("pixel_") or c in ("latitude", "longitude")]
+    X = df[feature_cols]
     y = df["label"]
 
     return X, y
@@ -101,7 +97,7 @@ def prepare_dataset_with_groups(
     df = df.dropna(subset=["image_id"]).copy()
     df["label"] = df["label"].replace({np.nan: -1}).astype(int)
 
-    feature_cols = [c for c in df.columns if c.startswith("pixel_")]
+    feature_cols = [c for c in df.columns if c.startswith("pixel_") or c in ("latitude", "longitude")]
     if not feature_cols:
         drop_cols = {
             "path",
