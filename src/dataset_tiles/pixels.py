@@ -29,6 +29,8 @@ def image_to_row(
         if dtype is not None:
             data = data.astype(dtype, copy=False)
         row = data.reshape(-1, order=flatten_order)
+        center_y, center_x = src.height // 2, src.width // 2
+        lon, lat = src.xy(center_y, center_x)
         meta = {
             "path": str(image_path),
             "filename": image_path.name,
@@ -45,6 +47,8 @@ def image_to_row(
                 src.transform.e,
                 src.transform.f,
             ),
+            "latitude": lat,
+            "longitude": lon,
         }
     return row, meta
 

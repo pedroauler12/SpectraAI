@@ -21,6 +21,8 @@ def test_prepare_dataset_labels(tmp_path: Path):
             "dtype": ["int16", "int16"],
             "crs": ["EPSG:4326", "EPSG:4326"],
             "transform": ["t", "t"],
+            "latitude": [-19.0, -20.0],
+            "longitude": [-46.0, -47.0],
             "pixel_0": [1, 2],
             "pixel_1": [3, 4],
         }
@@ -36,4 +38,7 @@ def test_prepare_dataset_labels(tmp_path: Path):
     X, y = prepare_dataset(str(csv_path), str(codes_path))
 
     assert list(y) == [1, 0]
-    assert list(X.columns) == ["pixel_0", "pixel_1"]
+    assert "latitude" in X.columns
+    assert "longitude" in X.columns
+    assert "pixel_0" in X.columns
+    assert "pixel_1" in X.columns
