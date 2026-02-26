@@ -127,6 +127,26 @@ $$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
   Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
 
 
+## 6. Resultados Preliminares
+
+### 6.1 Baseline Clássico (A02)
+
+&emsp;&emsp; Na etapa de modelagem clássica, três algoritmos foram avaliados como baselines supervisionados: Random Forest, SVM (kernel linear) e Regressão Logística. Os modelos foram treinados sobre vetores de 9 médias espectrais por banda (VNIR+SWIR) e avaliados no conjunto de teste com threshold otimizado via maximização do F1-Score no conjunto de validação.
+
+&emsp;&emsp; Entre os baselines, o SVM com kernel linear obteve o melhor F1-Score (0.851), seguido pela Regressão Logística (0.818) e pelo Random Forest (0.780). O SVM também apresentou o melhor recall (0.870), indicando maior capacidade de capturar depósitos reais. O Random Forest, por sua vez, obteve a maior ROC-AUC (0.930), sugerindo boa capacidade discriminativa geral, embora com menor recall no threshold otimizado.
+
+### 6.2 MLP Baseline (A03)
+
+&emsp;&emsp; O baseline neural consiste em uma rede MLP com duas camadas ocultas (32 e 16 neurônios, ativação ReLU) e camada de saída com 2 neurônios (sigmoid), treinada com sparse categorical crossentropy e otimizador Adam. A entrada são as mesmas 9 médias espectrais por banda utilizadas nos baselines clássicos, sem PCA.
+
+&emsp;&emsp; O modelo foi treinado por até 100 épocas com Early Stopping (paciência de 10 épocas, monitorando val_loss), utilizando batch size de 32 e divisão treino/validação/teste de 60%/20%/20% estratificada por imagem. O threshold de decisão foi otimizado via F1 no conjunto de validação.
+
+### 6.3 Comparação
+
+&emsp;&emsp; A comparação quantitativa entre os modelos permite avaliar se a capacidade de modelar relações não-lineares da MLP oferece ganhos sobre os baselines clássicos no contexto de prospecção mineral. As métricas detalhadas e visualizações comparativas estão disponíveis no notebook do artefato A03 (`artefatos/a03_mlp_baseline/a03_mlp_baseline.ipynb`), incluindo gráficos de barras agrupadas e análise de trade-offs entre precisão e recall para cada modelo.
+
+&emsp;&emsp; Os resultados indicam que, neste regime de poucos dados (177 amostras de treino) e representação simplificada (médias por banda), os modelos clássicos e a MLP operam em faixas de desempenho comparáveis, com diferenças que dependem da métrica priorizada. A análise completa das implicações operacionais é apresentada no notebook.
+
 ### Referências
 
 **ABRAMS, M.; YAMAGUCHI, Y.** Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration. *Remote Sensing*, v. 11, n. 11, 1394, 2019. DOI: 10.3390/rs11111394. Disponível em: [https://doi.org/10.3390/rs11111394](https://doi.org/10.3390/rs11111394). Acesso em: 22 fev. 2026.
