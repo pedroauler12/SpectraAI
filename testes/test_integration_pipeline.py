@@ -60,3 +60,5 @@ def test_pipeline_pixels_to_labels(tmp_path: Path):
 
     assert set(y.tolist()) == {0, 1}
     assert X.shape[0] == 2
+    assert "latitude" in X.columns
+    assert "longitude" in X.columns

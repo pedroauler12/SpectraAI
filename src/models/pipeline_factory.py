@@ -3,6 +3,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, SVR
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 import sys
 import os
@@ -10,12 +11,16 @@ import os
 sys.path.append(os.path.abspath("src"))
 
 from utils.metrics import classification_metrics, regression_metrics
+from models.mlp_activations import (
+    map_hidden_activation_to_sklearn,
+    select_mlp_activations,
+)
 
 def create_classifier_pipeline(model_name: str, **kwargs):
     """
     Pipeline para modelos de classificação
     
-    :param model_name: Selecione o modelo svm, random_forest ou logisticregression
+    :param model_name: Selecione o modelo svm, random_forest, logisticregression ou mlp
     :type model_name: str
     """
     if model_name == "svm":
@@ -24,6 +29,19 @@ def create_classifier_pipeline(model_name: str, **kwargs):
         model = RandomForestClassifier(**kwargs)
     elif model_name == "logisticregression":
         model = LogisticRegression(**kwargs)
+    elif model_name == "mlp":
+        n_classes = int(kwargs.pop("n_classes", 2))
+        hidden_activation = kwargs.pop("hidden_activation", "auto")
+
+        if hidden_activation == "auto":
+            activation_config = select_mlp_activations(
+                task_type="classification",
+                n_classes=n_classes,
+            )
+            hidden_activation = activation_config["hidden_activation"]
+
+        kwargs["activation"] = map_hidden_activation_to_sklearn(hidden_activation)
+        model = MLPClassifier(**kwargs)
     else:
         raise ValueError("Modelo de classificação não suportado")
 
@@ -91,4 +109,3 @@ def train_regression(X, y, model_name="random_forest"):
     metrics = regression_metrics(y_test, y_pred)
 
     return pipeline, metrics
-
