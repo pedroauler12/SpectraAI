@@ -1,9 +1,34 @@
-### Materiais
+# SpectraAI: Prospecção de Terras Raras a partir de Imagens Multiespectrais ASTER com Aprendizado de Máquina e Visão Computacional
+
+### Autores: Drielly Santana Farias, Eduardo Farias Rizk, Giovanna Fátima de Britto Vieira, Larissa Martins Pereira de Souza, Lucas Ramenzoni Jorge, Mateus Beppler Pereira, Pedro Auler de Barros Martins
+
+## 1. Introdução
+
+  A prospecção de minerais críticos, em especial os Elementos Terras Raras (Rare Earth Elements — REE), tornou-se um tema estratégico devido à sua relevância em cadeias produtivas de alta tecnologia, energia e defesa. Apesar de sua importância econômica, a identificação de áreas prospectivas ainda depende, em grande parte, de campanhas de campo e análises laboratoriais de alto custo, além de processos interpretativos complexos que demandam especialistas e tempo. Nesse cenário, o sensoriamento remoto se consolida como uma alternativa escalável para suporte à decisão geológica, permitindo analisar grandes extensões territoriais por meio de assinaturas espectrais associadas a litologias e processos de alteração hidrotermal.
+
+  Dentre os sensores disponíveis, o Advanced Spaceborne Thermal Emission and Reflection Radiometer (ASTER) destaca-se por fornecer bandas espectrais que capturam informações relevantes para mapeamento litológico e mineralógico, particularmente nas faixas VNIR (Visible and Near Infrared) e SWIR (Shortwave Infrared). A disponibilidade de produtos de refletância de superfície e o histórico de aplicações em exploração mineral tornam o ASTER uma fonte consistente para investigar padrões associados a mineralizações. Entretanto, a complexidade espacial das cenas, a alta dimensionalidade espectral e a sutileza das assinaturas minerais tornam a análise manual pouco escalável e potencialmente subjetiva.
+
+  Este trabalho propõe a elaboração de um pipeline inicial de ciência de dados e a exploração de métodos de aprendizado de máquina e visão computacional para apoiar a prospecção de áreas com potencial ocorrência de REE a partir de imagens multiespectrais ASTER, utilizando dados fornecidos pela Frontera Minerals. O objetivo é estruturar uma abordagem preliminar capaz de transformar dados geoespaciais em um conjunto de treinamento rotulado e, a partir disso, avaliar estratégias de modelagem que viabilizem a estimação e o ranqueamento probabilístico de regiões prospectivas.
+
+
+## 2. Fundamentação Teórica
+
+  A exploração mineral baseada em sensoriamento remoto utiliza a relação entre a resposta espectral dos materiais e suas propriedades físico-químicas para inferir a presença de litologias e minerais-alvo. Assinaturas espectrais podem refletir absorções diagnósticas de minerais de alteração (por exemplo, argilas e carbonatos), bem como variações composicionais que auxiliam na separação de unidades geológicas. O sensor ASTER é frequentemente empregado nesse contexto por oferecer resolução espacial adequada e bandas espectrais relevantes para discriminação mineralógica, especialmente em VNIR e SWIR.
+
+  Do ponto de vista computacional, a extração de informação a partir de imagens multiespectrais pode ser tratada como um problema de classificação, detecção ou ranqueamento de áreas de interesse. Métodos tradicionais incluem índices espectrais e técnicas estatísticas (por exemplo, razões de bandas e PCA), enquanto abordagens supervisionadas de aprendizado de máquina e aprendizado profundo permitem capturar padrões não lineares e dependências espaciais difíceis de modelar manualmente. Em aplicações de prospecção, tais métodos são particularmente úteis quando as assinaturas de interesse são sutis, quando há ruído no processo de rotulagem e quando o objetivo é produzir uma medida objetiva e reproduzível de potencial prospectivo.
+
+## 3. Materiais e Métodos
+
+### 3.1 Materiais
 
 &emsp;&emsp;O conjunto de dados do projeto foi disponibilizado pela Frontera Minerals e é composto por imagens multiespectrais do satélite ASTER, coordenadas georreferenciadas de ocorrências conhecidas e documentação técnica de apoio. A fonte primária de imagens é o produto ASTER L2 Surface Reflectance VNIR and Crosstalk‑Corrected SWIR (AST_07XT), adequado para análise espectral por fornecer refletância de superfície corrigida. Para garantir a integridade das bandas SWIR, foram selecionadas cenas do período de 2000 a 2007 (antes da falha do subsistema SWIR em 2008). As imagens utilizadas são diurnas e sem cobertura de nuvens, priorizando VNIR (3 bandas, 15 m) e SWIR (6 bandas, 30 m); o TIR foi inventariado, mas não é o foco nesta etapa.
 &emsp;&emsp;O *ground truth* é composto por coordenadas de minas de referência (Serra Verde e CBMM) e por uma base de positivos/negativos fornecida pelo parceiro, que orienta a rotulagem das amostras.
 
-### Trabalhos Relacionados
+### 3.2 Métodos
+
+
+## 4. Trabalhos Relacionados
+
 &emsp;&emsp;O artigo de revisão "Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration", publicado por Abrams e Yamaguchi (2019), resume o histórico de aplicações bem-sucedidas do sensor ASTER na pesquisa e mapeamento mineral. Lançado em 1999, o ASTER revolucionou a exploração geológica global ao fornecer melhor resolução espacial e capacidades multiespectrais únicas, apresentando seis bandas no infravermelho de ondas curtas (SWIR) e cinco bandas no infravermelho termal (TIR).
 &emsp;&emsp;Essa configuração espectral superou as limitações de satélites anteriores, como o Landsat, permitindo a distinção precisa de grupos minerais diagnósticos de alteração hidrotermal — como argilas, carbonatos, sulfatos e distinções na composição de silicatos. No contexto geológico voltado para minerais críticos e de Terras Raras, a revisão de Abrams e Yamaguchi destaca trabalhos pioneiros, como o estudo de Rowan e Mars (2003), que foram os primeiros a demonstrar a capacidade das 14 bandas do ASTER em distinguir litologias e mapear zonas de contato metamórfico associadas a depósitos de minerais de terras raras na região de Mountain Pass, Califórnia.
 &emsp;&emsp;A revisão literária também aborda a evolução das técnicas aplicadas ao extenso volume de imagens do ASTER para extração de informações mineralógicas:os autores relatam o uso bem-sucedido de técnicas mais simples, como índices minerais baseados em razões de bandas (band ratios), até métodos de processamento estatístico, como Análise de Componentes Principais (PCA). Ademais, o artigo relata o uso crescente de métodos analíticos sofisticados nos últimos anos, incluindo machine learning e modelos de redes neurais (como as redes neurais MLP e modelos SOM) utilizados para classificar complexidades espaciais e realizar mapeamentos litológicos e de zonas de alteração.
@@ -15,11 +40,6 @@
 &emsp;&emsp; Como contribuição para este projeto, Bahrami et al. reforçam que o ASTER mantém alta utilidade para tarefas de classificação litológica e identificação indireta de minerais quando combinado com métodos supervisionados, além de evidenciar que escolhas de pré-processamento e seleção de variáveis afetam significativamente a qualidade do mapa final. ([MDPI][1])
 &emsp;&emsp; Entretanto, há limitações importantes quando comparamos com a proposta da Frontera Minerals. Primeiro, o estudo é orientado a classes litológicas em um contexto regional específico, não sendo desenhado diretamente para um problema de “detecção/ranking prospectivo” (ex.: presença/ausência de assinatura associada a Terras Raras em torno de ocorrências conhecidas). Segundo, o trabalho depende de um conjunto de treinamento bem definido para classes do mapeamento local, enquanto o desafio do projeto envolve generalização e rotulagem positiva/negativa por proximidade geográfica (chips ao redor de coordenadas de referência), o que tende a introduzir ruído de rótulo e exigir estratégias de validação e modelagem. Ainda assim, o artigo oferece um baseline metodológico sólido para justificar a etapa de comparação entre modelos clássicos e redes neurais usando ASTER, além de servir de referência para decisões de features e avaliação.
 
-
-### Referências
-ABRAMS, Michael; YAMAGUCHU, Yasushi. **Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration**, 2019. Disponível em: https://doi.org/10.3390/rs11111394 Acesso em 3 fev. 2026
-
-BAHRAMI, Hazhir; ESMAEILI, Pouya; HOMAYOUNI, Saeid; POUR, Amin Beiranvand; CHOKMANI, Karem; BAHROUDI, Abbas. **Machine Learning-Based Lithological Mapping from ASTER Remote-Sensing Imagery**. *Minerals*, v. 14, n. 2, art. 202, 2024. DOI: **10.3390/min14020202**. Disponível em: `https://doi.org/10.3390/min14020202`. Acesso em: 24 fev. 2026. ([MDPI][1])
 ### Trabalho Relacionado: Redes Neurais para Prospecção de Terras Raras
 
 &emsp;&emsp;Avançando além da caracterização espectral dos sensores, a integração de modelos baseados em aprendizado profundo (_Deep Learning_) surge como o passo evolutivo necessário para superar a sutileza das assinaturas de elementos de terras raras (REE). O trabalho de Luo et al. (2025) introduz o framework **DEEP-SEAM v1.0**, demonstrando que a natureza não linear e altamente heterogênea dos conjuntos de dados de exploração impõe limitações aos métodos tradicionais de mapeamento.
@@ -28,8 +48,20 @@ BAHRAMI, Hazhir; ESMAEILI, Pouya; HOMAYOUNI, Saeid; POUR, Amin Beiranvand; CHOKM
 
 &emsp;&emsp;Essa convergência entre modelos _data-driven_ e a necessidade de interpretar assinaturas minerais complexas corrobora a adoção de redes neurais no SpectraAI. Ao utilizar redes neurais e visão computacional para processar imagens ASTER, o projeto promove o ranqueamento de áreas prospectivas de terras raras de forma escalável, objetiva e com alta fidelidade geológica.
 
-# Referências
 
-LUO, Zijing et al. **An explainable semi-supervised deep learning framework for mineral prospectivity mapping: DEEP-SEAM v1.0**. EGUsphere [preprint], 2025. Disponível em: https://doi.org/10.5194/egusphere-2025-3283 Acesso em 23 fev. 2026
+## 5. Proposta Metodológica Preliminar
 
-SONG, Yu et al. **Predicting Rare Earth Elements Concentration in Coal Ashes with Multi-Task Neural Networks**. Materials Horizons, 2023. Disponível em: https://doi.org/10.1039/D3MH01491F Acesso em 23 fev. 2026
+  Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
+
+
+### Referências
+
+**ABRAMS, M.; YAMAGUCHI, Y.** Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration. *Remote Sensing*, v. 11, n. 11, 1394, 2019. DOI: 10.3390/rs11111394. Disponível em: [https://doi.org/10.3390/rs11111394](https://doi.org/10.3390/rs11111394). Acesso em: 22 fev. 2026. ([MDPI][4])
+
+**BAHRAMI, H.** et al. Machine Learning-Based Lithological Mapping from ASTER Remote-Sensing Imagery. *Minerals*, v. 14, n. 2, 202, 2024. DOI: 10.3390/min14020202. Disponível em: [https://doi.org/10.3390/min14020202](https://doi.org/10.3390/min14020202). Acesso em: 24 fev. 2026. ([EGUsphere][2])
+
+**ROWAN, L. C.; MARS, J. C.** Lithologic mapping in the Mountain Pass, California area using ASTER data. *Remote Sensing of Environment*, v. 84, n. 3, p. 350–366, 2003. DOI: 10.1016/S0034-4257(02)00127-X. Disponível em: [https://doi.org/10.1016/S0034-4257(02)00127-X](https://doi.org/10.1016/S0034-4257%2802%2900127-X). Acesso em: 26 fev. 2026. ([ScienceDirect][5])
+
+**LUO, Z.** et al. An explainable semi-supervised deep learning framework for mineral prospectivity mapping: DEEP-SEAM v1.0. *EGUsphere* (preprint), 2025. DOI: 10.5194/egusphere-2025-3283. Disponível em: [https://doi.org/10.5194/egusphere-2025-3283](https://doi.org/10.5194/egusphere-2025-3283). Acesso em: 23 fev. 2026. ([EGUsphere][2])
+
+**SONG, Y.** et al. Predicting rare earth elements concentration in coal ashes with multi-task neural networks. *Materials Horizons*, 2024. DOI: 10.1039/D3MH01491F. Disponível em: [https://doi.org/10.1039/D3MH01491F](https://doi.org/10.1039/D3MH01491F). Acesso em: 23 fev. 2026. ([Publicações RSC][3])
