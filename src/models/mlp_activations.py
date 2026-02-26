@@ -1,4 +1,4 @@
-    """
+"""
 Funcoes de ativacao e selecao de configuracao para MLP.
 
 Este modulo implementa as ativacoes mais usadas no baseline deep learning
