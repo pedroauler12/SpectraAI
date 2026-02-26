@@ -237,7 +237,7 @@ def analyze_pca_loadings(
     band_cols: list,
     pc_df_columns: list = None,
     focus_bands: list = None
-) -> pd.DataFrame:
+) -> tuple:
     """
     Analisa os loadings dos componentes principais.
     
@@ -260,14 +260,17 @@ def analyze_pca_loadings(
         
     Returns
     -------
-    pd.DataFrame
-        DataFrame com loadings (bandas como índice, componentes como colunas).
+    tuple
+        (df_loadings, important_bands_dict) onde:
+        - df_loadings é DataFrame com loadings (bandas × componentes)
+        - important_bands_dict é dict com bandas ordenadas por importância
+          {'PC1': [('B05', 0.45), ('B07', 0.42), ...], 'PC2': [...], ...}
         
     Notes
     -----
     - Loadings indicam a correlação entre banda original e componente principal
     - Valores próximos de 0 indicam pouca influência
-    - Valores negativos indicam correlação negativa
+    - Valores negativos indicam correlação negativa (mas ainda importantes!)
     - Para mineralogia de Terras Raras, B4 e B6 são frequentemente analisados
     """
     logger.info("Analisando loadings dos componentes principais...")
@@ -285,25 +288,32 @@ def analyze_pca_loadings(
     
     logger.debug(f"Loadings calculados: {df_loadings.shape}")
     
-    # Análise de bandas específicas se fornecidas
-    if focus_bands is not None:
-        logger.info(f"Analisando loadings focados em: {focus_bands}")
-        for pc in pc_df_columns:
-            for band in focus_bands:
-                if band in df_loadings.columns:
-                    loading_value = df_loadings.loc[pc, band]
-                    logger.debug(f"  {pc} - {band}: {loading_value:.4f}")
+    # Encontrar bandas mais importantes (maior loading absoluto) por PC
+    important_bands_dict = {}
+    for pc in pc_df_columns:
+        # Ordenar bandas por loading absoluto (descendente)
+        sorted_bands = df_loadings.loc[pc].abs().sort_values(ascending=False)
+        important_bands_dict[pc] = [
+            (band, df_loadings.loc[pc, band]) 
+            for band in sorted_bands.index
+        ]
         
-        # Encontrar componentes com maior influência de bandas focadas
+        logger.info(f"\n{pc} - Bandas mais importantes:")
+        for i, (band, loading) in enumerate(important_bands_dict[pc][:5]):
+            logger.info(f"  {i+1}. {band}: {loading:+.4f}")
+    
+    # Análise de bandas específicas se fornecidas (para validação)
+    if focus_bands is not None:
+        logger.info(f"\nValidação de bandas focadas: {focus_bands}")
         for band in focus_bands:
-            if band in df_loadings.columns:
+            if band in band_cols:
                 max_pc = df_loadings[band].abs().idxmax()
                 max_value = df_loadings.loc[max_pc, band]
-                logger.info(
-                    f"Maior loading para {band}: {max_pc} ({max_value:.4f})"
-                )
+                logger.info(f"  {band}: Principal em {max_pc} (loading={max_value:+.4f})")
+            else:
+                logger.warning(f"  {band}: Não encontrada no modelo!")
     
-    return df_loadings
+    return df_loadings, important_bands_dict
 
 
 def prepare_pixel_pipeline(
@@ -323,28 +333,61 @@ def prepare_pixel_pipeline(
     df : pd.DataFrame
         DataFrame bruto com colunas pixel_*.
     band_names : list
-        Lista com nomes das bandas.
+        Lista com nomes das bandas (ex: ['B01', 'B02', ..., 'B14']).
     variance_threshold : float, default=0.95
-        Limiar de variância para PCA.
+        Limiar de variância para PCA (0.0 a 1.0).
+        Exemplo: 0.95 = manter 95% da variância original
     focus_bands : list, optional
-        Bandas para análise detalhada de loadings.
+        Bandas específicas para análise detalhada de loadings. Se None, nenhuma
+        análise focada é realizada. Exemplos:
+        - Terras Raras: ['B04', 'B06']
+        - VNIR: ['B01', 'B02', 'B03']
+        - TIR: ['B10', 'B11', 'B14']
         
     Returns
     -------
     dict
         Dicionário contendo:
-        - 'df_pixels': dados reestruturados
-        - 'df_standardized': dados padronizados
-        - 'df_pca': componentes principais
-        - 'df_loadings': loadings do PCA
-        - 'scaler': objeto StandardScaler
-        - 'pca_model': objeto PCA
+        - 'df_pixels': dados reestruturados (pixel_X → bandas)
+        - 'df_standardized': dados padronizados (Z-score)
+        - 'df_pca': componentes principais reduzidos
+        - 'df_loadings': contribuições de cada banda em cada PC
+        - 'important_bands': dict com bandas ordenadas por importância
+          Formato: {'PC1': [('B05', 0.45), ('B07', 0.42), ...], 'PC2': [...]}
+        - 'scaler': objeto StandardScaler (para novos dados)
+        - 'pca_model': objeto PCA fitted (para novos dados)
         
-    Example
-    -------
-    >>> result = prepare_pixel_pipeline(df, ['B1', 'B2', 'B3'], focus_bands=['B2', 'B3'])
-    >>> df_pca = result['df_pca']
-    >>> loadings = result['df_loadings']
+    Examples
+    --------
+    >>> # Foco em Terras Raras (padrão SWIR)
+    >>> result = prepare_pixel_pipeline(
+    ...     df, 
+    ...     band_names=['B01', 'B02', ..., 'B14'],
+    ...     variance_threshold=0.95,
+    ...     focus_bands=['B04', 'B06']
+    ... )
+    >>> df_pca = result['df_pca']  # Use isto no seu modelo!
+    >>> loadings = result['df_loadings']  # Para entender contribuições
+    
+    >>> # Foco em Infrared Termal para vulcanismo
+    >>> result = prepare_pixel_pipeline(
+    ...     df,
+    ...     band_names=['B01', 'B02', ..., 'B14'],
+    ...     focus_bands=['B10', 'B11', 'B12', 'B13', 'B14']
+    ... )
+    
+    >>> # Sem foco (análise todas as bandas igualmente)
+    >>> result = prepare_pixel_pipeline(df, band_names)
+    
+    >>> # Descobrir quais bandas são mais importantes
+    >>> important = result['important_bands']
+    >>> for pc, bands in important.items():
+    ...     print(f"{pc}: {bands[:3]}")
+    
+    >>> # Salvando modelos para reutilizar com novos dados
+    >>> import pickle
+    >>> pickle.dump(result['scaler'], open('scaler.pkl', 'wb'))
+    >>> pickle.dump(result['pca_model'], open('pca_model.pkl', 'wb'))
     """
     logger.info("Iniciando pipeline completo de preparação de pixels...")
     
@@ -357,9 +400,9 @@ def prepare_pixel_pipeline(
     # Passo 3: Aplicar PCA
     df_pca, pca_model = apply_pca(df_standardized, band_names, variance_threshold)
     
-    # Passo 4: Analisar loadings
+    # Passo 4: Analisar loadings e encontrar bandas mais importantes
     pc_columns = [f'PC{i+1}' for i in range(pca_model.n_components_)]
-    df_loadings = analyze_pca_loadings(
+    df_loadings, important_bands = analyze_pca_loadings(
         pca_model,
         band_names,
         pc_columns,
@@ -373,6 +416,124 @@ def prepare_pixel_pipeline(
         'df_standardized': df_standardized,
         'df_pca': df_pca,
         'df_loadings': df_loadings,
+        'important_bands': important_bands,  # ← NEW! Bandas realmente importantes
         'scaler': scaler,
         'pca_model': pca_model
     }
+
+
+def prepare_for_neural_network(
+    df_pca: pd.DataFrame,
+    target_column: str = None,
+    test_size: float = 0.2,
+    random_state: int = 42
+) -> dict:
+    """
+    Prepara dados PCA para entrada em rede neural (train/test split).
+    
+    Separa os dados PCA em conjunto de treinamento e validação para redes neurais.
+    
+    Parameters
+    ----------
+    df_pca : pd.DataFrame
+        DataFrame contendo os componentes principais (ex: saída de apply_pca).
+    target_column : str, optional
+        Nome da coluna de rótulo/target se houver. Se None, retorna apenas features.
+    test_size : float, default=0.2
+        Proporção dos dados para teste (0.2 = 20% teste, 80% treino).
+    random_state : int, default=42
+        Seed para reprodutibilidade na divisão train/test.
+        
+    Returns
+    -------
+    dict
+        Dicionário contendo:
+        - 'X_train': Array de features para treino
+        - 'X_test': Array de features para teste
+        - 'y_train': Array de targets para treino (se target_column fornecido)
+        - 'y_test': Array de targets para teste (se target_column fornecido)
+        - 'feature_columns': Nomes das colunas de entrada (PC1, PC2, ...)
+        - 'train_indices': Índices das amostras de treino
+        - 'test_indices': Índices das amostras de teste
+        
+    Example
+    -------
+    >>> from src.pixel_preprocessing import apply_pca, prepare_for_neural_network
+    >>> df_pca, pca_model = apply_pca(df_standardized, band_names)
+    >>> 
+    >>> # Sem target (apenas features PCA)
+    >>> dataset = prepare_for_neural_network(df_pca)
+    >>> X_train = dataset['X_train']
+    >>> 
+    >>> # Com target para classificação
+    >>> dataset = prepare_for_neural_network(df_pca, target_column='mineral_type')
+    >>> X_train, y_train = dataset['X_train'], dataset['y_train']
+    >>> 
+    >>> # Usar em Keras
+    >>> from tensorflow.keras.models import Sequential
+    >>> from tensorflow.keras.layers import Dense
+    >>> model = Sequential([
+    ...     Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    ...     Dense(32, activation='relu'),
+    ...     Dense(num_classes, activation='softmax')
+    ... ])
+    >>> model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50)
+    """
+    from sklearn.model_selection import train_test_split
+    
+    logger.info(f"Preparando dados para rede neural (test_size={test_size})...")
+    
+    # Extrair features (componentes principais)
+    pc_columns = [col for col in df_pca.columns if col.startswith('PC')]
+    X = df_pca[pc_columns].values
+    
+    feature_columns = pc_columns
+    logger.info(f"Features: {feature_columns}")
+    
+    # Se houver target
+    if target_column is not None and target_column in df_pca.columns:
+        y = df_pca[target_column].values
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y,
+            test_size=test_size,
+            random_state=random_state
+        )
+        logger.info(f"Dados com target '{target_column}':")
+        logger.info(f"  - Train: {X_train.shape[0]} amostras")
+        logger.info(f"  - Test: {X_test.shape[0]} amostras")
+        
+        return {
+            'X_train': X_train,
+            'X_test': X_test,
+            'y_train': y_train,
+            'y_test': y_test,
+            'feature_columns': feature_columns,
+            'feature_names': pc_columns,
+            'n_features': len(feature_columns),
+            'train_indices': None,
+            'test_indices': None
+        }
+    else:
+        # Sem target - apenas features
+        X_train, X_test = train_test_split(
+            X,
+            test_size=test_size,
+            random_state=random_state,
+            shuffle=True
+        )
+        logger.info(f"Dados sem target (apenas features PCA):")
+        logger.info(f"  - Train: {X_train.shape[0]} amostras")
+        logger.info(f"  - Test: {X_test.shape[0]} amostras")
+        logger.info(f"  - Features (componentes): {len(feature_columns)}")
+        
+        return {
+            'X_train': X_train,
+            'X_test': X_test,
+            'y_train': None,
+            'y_test': None,
+            'feature_columns': feature_columns,
+            'feature_names': pc_columns,
+            'n_features': len(feature_columns),
+            'train_indices': None,
+            'test_indices': None
+        }

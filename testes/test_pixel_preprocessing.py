@@ -164,11 +164,14 @@ class TestAnalyzePCALoadings:
         df_pca, pca_model = apply_pca(df_std, band_names)
         pc_columns = [f'PC{i+1}' for i in range(pca_model.n_components_)]
         
-        df_loadings = analyze_pca_loadings(pca_model, band_names, pc_columns)
+        df_loadings, important_bands = analyze_pca_loadings(pca_model, band_names, pc_columns)
         
         # Verificar shape dos loadings
         assert df_loadings.shape[0] == len(pc_columns)
         assert df_loadings.shape[1] == len(band_names)
+        # Verificar important_bands
+        assert isinstance(important_bands, dict)
+        assert all(pc in important_bands for pc in pc_columns)
     
     def test_focus_bands_analysis(self, sample_data):
         """Testa análise de bandas focadas."""
@@ -180,12 +183,15 @@ class TestAnalyzePCALoadings:
         pc_columns = [f'PC{i+1}' for i in range(pca_model.n_components_)]
         
         focus_bands = [band_names[0], band_names[1]]
-        df_loadings = analyze_pca_loadings(
+        df_loadings, important_bands = analyze_pca_loadings(
             pca_model, band_names, pc_columns, focus_bands=focus_bands
         )
         
         # Deve retornar os loadings mesmo com focus_bands
         assert all(band in df_loadings.columns for band in focus_bands)
+        # Verificar important_bands
+        assert isinstance(important_bands, dict)
+        assert len(important_bands) == len(pc_columns)
 
 
 class TestPixelPipeline:
