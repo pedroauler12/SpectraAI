@@ -36,37 +36,60 @@
 
 ### 3.2 Métodos
 
-&emsp;&emsp; A metodologia foi estruturada como pipeline de dados geoespaciais composto por: (i) ingestão e auditoria de cenas ASTER, (ii) pré-processamento e padronização espacial para geração de chips multibanda, (iii) construção de dataset supervisionado e (iv) avaliação preliminar de modelos supervisionados. O fluxo foi desenvolvido em Python, com apoio de notebooks e módulos em `src/`.
 
-### 3.2.1 Ingestão e auditoria dos dados
+#### 3.2.1. Aquisição de Dados e Alvos Geológicos
 
-&emsp;&emsp; As cenas ASTER são consultadas via `earthaccess`, com parâmetros de período temporal, caixa geográfica e limite de granules por busca. Após download, as bandas de interesse (VNIR B01, B02, B03N e SWIR B04-B09) são identificadas automaticamente, enquanto arquivos de QA e artefatos não espectrais são descartados da etapa de empilhamento.
+A base de dados do projeto é composta por amostras de solo e rocha coletadas in situ pela **Frontera Minerals**, contendo teores geoquímicos de Elementos de Terras Raras (ETR). As amostras foram rotuladas binariamente:
 
-&emsp;&emsp; A auditoria inclui inspeção de metadados e estatísticas por banda (mínimo, máximo, média, desvio, percentis e proporção de no-data), permitindo verificar consistência de CRS, dimensões, número de bandas e qualidade dos recortes.
+* **Classe Positiva (y = 1):** Áreas com teores acima do *cut-off* econômico, associadas a depósitos iônicos ou rochas alcalinas mineralizadas.
+* **Classe Negativa (y = 0):** Áreas estéreis ou com teores de base (background).
 
-### 3.2.2 Pré-processamento espectral e padronização espacial
+As assinaturas espectrais foram extraídas de imagens do sensor **ASTER (Advanced Spaceborne Thermal Emission and Reflection Radiometer)**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR), com resolução espacial reamostrada para compatibilidade.
 
-&emsp;&emsp; Como VNIR e SWIR possuem resoluções distintas, as bandas são reamostradas para uma grade comum durante o recorte e empilhamento multibanda com `WarpedVRT`. O CRS de saída é padronizado para EPSG:4326 no produto de chip. O método de reamostragem é configurável, com padrão atual em `nearest` no pipeline.
+#### 3.2.2. Pré-processamento e Engenharia de Atributos
 
-&emsp;&emsp; Para estabilização de escala na etapa de modelagem, foram utilizados procedimentos de normalização disponíveis no repositório, como Min-Max por banda e padronização via `StandardScaler` no pipeline de treino dos modelos clássicos. Há também utilitários exploratórios com clipping por percentis para visualização/carregamento.
+Para mitigar ruídos e isolar a resposta mineralógica, o pipeline de dados executou:
 
-### 3.2.3 Geração de amostras (chips) e rotulagem supervisionada
+1. **Filtragem de Máscaras:** Remoção de pixels contaminados por nuvens e densa cobertura vegetal (NDVI > limiar).
+2. **Cálculo de Índices Minerais:** Foram geradas *features* baseadas em razões de bandas consagradas na literatura de sensoriamento remoto mineral, como o **Índice de Argilas** $[B06 / (B05 + B04)]$, visando destacar produtos de alteração hidrotermal e intemperismo.
+3. **Vetorização:** Cada amostra foi convertida em um vetor de alta dimensionalidade ($p = 147.456$), representando tanto as bandas brutas quanto as janelas espaciais adjacentes.
+
+
+#### 3.2.3 Geração de amostras (chips) e rotulagem supervisionada
 
 &emsp;&emsp; O dataset supervisionado é construído a partir de chips gerados ao redor de pontos georreferenciados. Cada chip é um GeoTIFF multibanda com bandas VNIR+SWIR empilhadas e alinhadas espacialmente. O recorte usa bbox com jitter controlado por semente, garantindo que o ponto de referência permaneça dentro do chip.
 
 &emsp;&emsp; Em seguida, os chips são convertidos para um dataset tabular, no qual cada amostra é representada por um vetor de pixels (`pixel_*`) e metadados (path, dimensões, CRS etc.). A rotulagem é aplicada por mapeamento de `image_id` para listas de positivos e negativos fornecidas no `extracted_codes.json`.
 
-### 3.2.4 Particionamento do dataset e prevenção de vazamento espacial
+#### 3.2.3. Protocolo de Divisão de Dados (Anti-Leakage)
 
-&emsp;&emsp; Para reduzir vazamento espacial, a avaliação do baseline clássico foi conduzida com separação por `image_id` em treino/validação/teste. Na seleção de hiperparâmetros, utiliza-se validação cruzada com grupos (preferencialmente `StratifiedGroupKFold`, com fallback `GroupKFold`), de modo que amostras da mesma imagem não apareçam simultaneamente em partições de treino e validação.
+Um ponto crítico da metodologia é o controle de **vazamento de dados (spatial leakage)**. A divisão do dataset em treino (60%), validação (20%) e teste (20%) foi realizada no nível de cena (**image_id**).
 
-### 3.2.5 Baselines de modelagem e representação das entradas
+* Amostras pertencentes à mesma imagem de satélite foram mantidas obrigatoriamente no mesmo grupo.
+* Utilizou-se o método **StratifiedGroupKFold** para garantir que a proporção de classes fosse mantida em todos os *folds*, impedindo que o modelo memorizasse condições de iluminação ou sensores específicos de uma única imagem.
 
-&emsp;&emsp; No baseline clássico (A02), foram avaliados três modelos supervisionados: Random Forest, SVM e Regressão Logística. Esses modelos são treinados com protocolo comum de preparação, busca de hiperparâmetros em treino, calibração de threshold na validação e avaliação final em teste isolado.
 
-&emsp;&emsp; A representação utilizada no baseline é vetorial (flatten dos pixels do chip). Em paralelo, o repositório já contém componentes iniciais para baseline com MLP (incluindo definição de ativações ReLU/Sigmoid/Softmax), enquanto arquiteturas CNN permanecem como evolução para sprints seguintes.
+#### 3.2.4. Modelagem Clássica (Baseline)
 
-### 3.2.6 Critérios de avaliação e produto final esperado
+Foram avaliados três algoritmos de aprendizado supervisionado para estabelecer o desempenho de referência:
+
+1. **Support Vector Machine (SVM):** Implementada com kernel linear e regularização , visando a maximização da margem em espaço de alta dimensionalidade.
+2. **Random Forest (RF):** Conjunto de árvores de decisão para capturar interações não lineares entre as bandas espectrais.
+3. **Regressão Logística:** Baseline linear para verificação de separabilidade simples e calibração probabilística.
+
+A otimização de hiperparâmetros foi realizada via **GridSearchCV**, utilizando o conjunto de validação para a escolha final dos modelos.
+
+#### 3.2.5. Protocolo de Avaliação e Calibração de Limiar
+
+Dada a natureza exploratória do problema, o limiar de decisão ($\tau$) não foi fixado em 0.5. Em vez disso:
+
+1. O modelo gerou scores contínuos.
+2. O limiar ótimo foi selecionado no conjunto de validação através da maximização do **F1-Score** na curva Precision-Recall.
+3. As métricas finais (F1, Precision, Recall, ROC-AUC e PR-AUC) foram calculadas exclusivamente no conjunto de teste isolado.
+
+$$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
+
+#### 3.2.6 Critérios de avaliação e produto final esperado
 
 &emsp;&emsp; A avaliação considera métricas de classificação binária: acurácia, precisão, revocação (recall), F1-score, balanced accuracy, ROC-AUC e PR-AUC, além de matriz de confusão e análise de erros. O resultado pode ser interpretado como escore prospectivo por amostra/região, permitindo ordenar áreas por probabilidade estimada de classe positiva.
 
