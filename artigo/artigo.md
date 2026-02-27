@@ -147,6 +147,14 @@ $$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
 
 &emsp;&emsp; Os resultados indicam que, neste regime de poucos dados (177 amostras de treino) e representação simplificada (médias por banda), os modelos clássicos e a MLP operam em faixas de desempenho comparáveis, com diferenças que dependem da métrica priorizada. A análise completa das implicações operacionais é apresentada no notebook.
 
+## 7. Discussão e Próximos Passos
+
+&emsp;&emsp; Os resultados obtidos até o momento demonstram que tanto modelos clássicos quanto a MLP baseline conseguem discriminar, com desempenho acima do aleatório, áreas com e sem potencial prospectivo para ETR a partir de assinaturas espectrais ASTER. No entanto, a representação atual — médias por banda — descarta informação espacial e textural que pode ser diagnóstica para identificação de mineralizações, constituindo a principal limitação arquitetural desta etapa.
+
+&emsp;&emsp; O regime de poucos dados (177 amostras de treino) e a ausência de validação geográfica cruzada impõem cautela na interpretação dos resultados. Os modelos podem estar capturando correlações espúrias associadas a condições de iluminação ou contexto geológico compartilhado entre treino e teste, ao invés de padrões espectrais genuinamente associados a mineralizações de ETR.
+
+&emsp;&emsp; Para as próximas sprints, propõe-se: (i) migração para arquiteturas convolucionais (CNNs) que processem os chips 128×128×9 completos, preservando informação espacial; (ii) técnicas de data augmentation (rotação, flip, jitter espectral) para expandir o N efetivo; (iii) transfer learning a partir de datasets maiores de sensoriamento remoto; (iv) validação espacial cruzada para avaliar generalização geográfica; e (v) fusão com dados geológicos complementares para um ranqueamento prospectivo multifonte.
+
 ### Referências
 
 **ABRAMS, M.; YAMAGUCHI, Y.** Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration. *Remote Sensing*, v. 11, n. 11, 1394, 2019. DOI: 10.3390/rs11111394. Disponível em: [https://doi.org/10.3390/rs11111394](https://doi.org/10.3390/rs11111394). Acesso em: 22 fev. 2026.
