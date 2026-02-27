@@ -51,6 +51,10 @@ def test_image_to_row_meta(tmp_path: Path):
     assert meta["height"] == 2
     assert meta["width"] == 2
     assert meta["dtype"] == "int16"
+    assert "latitude" in meta
+    assert "longitude" in meta
+    assert isinstance(meta["latitude"], float)
+    assert isinstance(meta["longitude"], float)
 
 
 def test_build_pixel_dataset(tmp_path: Path):
@@ -63,7 +67,7 @@ def test_build_pixel_dataset(tmp_path: Path):
     df = build_pixel_dataset(tmp_path, recursive=True, include_meta=True)
 
     pixel_cols = 2 * 3 * 4
-    meta_cols = 8  # path, filename, count, height, width, dtype, crs, transform
+    meta_cols = 10  # path, filename, count, height, width, dtype, crs, transform, latitude, longitude
     assert df.shape == (2, meta_cols + pixel_cols)
     assert "pixel_0" in df.columns
     assert "pixel_23" in df.columns
