@@ -36,64 +36,52 @@
 
 ### 3.2 Métodos
 
-
 #### 3.2.1. Aquisição de Dados e Alvos Geológicos
 
-A base de dados do projeto é composta por amostras de solo e rocha coletadas in situ pela **Frontera Minerals**, contendo teores geoquímicos de Elementos de Terras Raras (ETR). As amostras foram rotuladas binariamente:
+A base de dados do projeto é composta por amostras de solo e rocha coletadas *in situ* pela **Frontera Minerals**, contendo teores geoquímicos de Elementos de Terras Raras (ETR). As amostras foram rotuladas binariamente:
 
 * **Classe Positiva (y = 1):** Áreas com teores acima do *cut-off* econômico, associadas a depósitos iônicos ou rochas alcalinas mineralizadas.
-* **Classe Negativa (y = 0):** Áreas estéreis ou com teores de base (background).
+* **Classe Negativa (y = 0):** Áreas estéreis ou com teores de base (*background*).
 
-As assinaturas espectrais foram extraídas de imagens do sensor **ASTER (Advanced Spaceborne Thermal Emission and Reflection Radiometer)**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR), com resolução espacial reamostrada para compatibilidade.
+As assinaturas espectrais foram extraídas de imagens do sensor **ASTER**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR). Devido à degradação do sensor SWIR após 2008, o pipeline prioriza cenas históricas (2000-2007) com cobertura de nuvens inferior a 30% (conforme documentado no protocolo de acesso ASTER), garantindo a integridade dos dados para mapeamento de argilas.
 
 #### 3.2.2. Pré-processamento e Engenharia de Atributos
 
-Para mitigar ruídos e isolar a resposta mineralógica, o pipeline de dados executou:
+Para mitigar ruídos e isolar a resposta mineralógica, o pipeline executou:
 
 1. **Filtragem de Máscaras:** Remoção de pixels contaminados por nuvens e densa cobertura vegetal (NDVI > limiar).
-2. **Cálculo de Índices Minerais:** Foram geradas *features* baseadas em razões de bandas consagradas na literatura de sensoriamento remoto mineral, como o **Índice de Argilas** $[B06 / (B05 + B04)]$, visando destacar produtos de alteração hidrotermal e intemperismo.
-3. **Vetorização:** Cada amostra foi convertida em um vetor de alta dimensionalidade ($p = 147.456$), representando tanto as bandas brutas quanto as janelas espaciais adjacentes.
+2. **Reprojeção:** Conversão sistemática de coordenadas para WGS84, corrigindo discrepâncias entre os dados de campo (SAD69) e os produtos orbitais.
+3. **Cálculo de Índices Minerais:** Geração de *features* baseadas em razões de bandas como o **Índice de Argilas** $[B06 / (B05 + B04)]$.
+4. **Vetorização (Abordagem Tabular):** Para a fase inicial de baselines, cada amostra foi convertida em um vetor de alta dimensionalidade ($p = 147.456$), representando bandas brutas e janelas adjacentes.
 
+#### 3.2.3. Geração de Amostras (Chips) e Rotulagem
 
-#### 3.2.3 Geração de amostras (chips) e rotulagem supervisionada
+O dataset é construído a partir de **chips** gerados ao redor de pontos georreferenciados. Cada chip é um GeoTIFF multibanda com bandas VNIR+SWIR alinhadas.
 
-&emsp;&emsp; O dataset supervisionado é construído a partir de chips gerados ao redor de pontos georreferenciados. Cada chip é um GeoTIFF multibanda com bandas VNIR+SWIR empilhadas e alinhadas espacialmente. O recorte usa bbox com jitter controlado por semente, garantindo que o ponto de referência permaneça dentro do chip.
+* **Extração:** O recorte utiliza uma *bounding box* (bbox) com **jitter controlado por semente**, garantindo que o ponto de referência permaneça dentro do chip, mas em posições variadas para aumentar a robustez.
+* **Processamento Tabular:** Para os modelos iniciais, os chips são convertidos em vetores (`pixel_*`) e metadados. A rotulagem é aplicada via mapeamento de `image_id` para as listas de positivos/negativos fornecidas no arquivo `extracted_codes.json`.
 
-&emsp;&emsp; Em seguida, os chips são convertidos para um dataset tabular, no qual cada amostra é representada por um vetor de pixels (`pixel_*`) e metadados (path, dimensões, CRS etc.). A rotulagem é aplicada por mapeamento de `image_id` para listas de positivos e negativos fornecidas no `extracted_codes.json`.
+#### 3.2.4. Modelagem de Referência (Baselines)
 
-#### 3.2.3. Protocolo de Divisão de Dados (Anti-Leakage)
+Estabeleceu-se o desempenho de referência através de:
 
-Um ponto crítico da metodologia é o controle de **vazamento de dados (spatial leakage)**. A divisão do dataset em treino (60%), validação (20%) e teste (20%) foi realizada no nível de cena (**image_id**).
+1. **Algoritmos Clássicos:** SVM (kernel linear), Random Forest e Regressão Logística, otimizados via `GridSearchCV`.
+2. **Multi-Layer Perceptron (MLP):** Uma rede neural densa utilizada para testar a capacidade de aprendizado não linear sobre os dados vetorizados, servindo como o baseline de Deep Learning.
 
-* Amostras pertencentes à mesma imagem de satélite foram mantidas obrigatoriamente no mesmo grupo.
-* Utilizou-se o método **StratifiedGroupKFold** para garantir que a proporção de classes fosse mantida em todos os *folds*, impedindo que o modelo memorizasse condições de iluminação ou sensores específicos de uma única imagem.
+#### 3.2.5. Evolução para Visão Computacional (CNN)
 
+Visando superar a limitação estrutural da MLP, que ignora a vizinhança espacial, o projeto evoluiu para o uso de **Redes Neurais Convolucionais (CNN)**:
 
-#### 3.2.4. Modelagem Clássica (Baseline)
+* **Tensores Espaciais:** Em vez de vetorizar os pixels, a CNN recebe o chip em sua forma original (Altura x Largura x Canais), permitindo que filtros convolucionais identifiquem texturas e padrões morfológicos do solo.
+* **Data Augmentation:** Implementação de rotações e espelhamentos para simular diferentes orientações geológicas e prevenir o *overfitting*.
 
-Foram avaliados três algoritmos de aprendizado supervisionado para estabelecer o desempenho de referência:
+#### 3.2.6. Protocolo de Divisão de Dados e Anti-Leakage
 
-1. **Support Vector Machine (SVM):** Implementada com kernel linear e regularização , visando a maximização da margem em espaço de alta dimensionalidade.
-2. **Random Forest (RF):** Conjunto de árvores de decisão para capturar interações não lineares entre as bandas espectrais.
-3. **Regressão Logística:** Baseline linear para verificação de separabilidade simples e calibração probabilística.
+O controle de **vazamento de dados (spatial leakage)** é rigoroso. A divisão em treino (60%), validação (20%) e teste (20%) é feita no nível de **cena (image_id)**. Amostras da mesma imagem permanecem no mesmo grupo, utilizando **StratifiedGroupKFold** para manter a proporção de classes em todos os folds e impedir que o modelo memorize condições específicas de uma única captura.
 
-A otimização de hiperparâmetros foi realizada via **GridSearchCV**, utilizando o conjunto de validação para a escolha final dos modelos.
+#### 3.2.7. Protocolo de Avaliação e Produto Final
 
-#### 3.2.5. Protocolo de Avaliação e Calibração de Limiar
-
-Dada a natureza exploratória do problema, o limiar de decisão ($\tau$) não foi fixado em 0.5. Em vez disso:
-
-1. O modelo gerou scores contínuos.
-2. O limiar ótimo foi selecionado no conjunto de validação através da maximização do **F1-Score** na curva Precision-Recall.
-3. As métricas finais (F1, Precision, Recall, ROC-AUC e PR-AUC) foram calculadas exclusivamente no conjunto de teste isolado.
-
-$$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
-
-#### 3.2.6 Critérios de avaliação e produto final esperado
-
-&emsp;&emsp; A avaliação considera métricas de classificação binária: acurácia, precisão, revocação (recall), F1-score, balanced accuracy, ROC-AUC e PR-AUC, além de matriz de confusão e análise de erros. O resultado pode ser interpretado como escore prospectivo por amostra/região, permitindo ordenar áreas por probabilidade estimada de classe positiva.
-
-&emsp;&emsp; O produto esperado nesta etapa é um mecanismo reprodutível de geração de chips, montagem de dataset e inferência supervisionada, servindo como base para refinamentos metodológicos e expansão para modelos de visão computacional nas próximas sprints.
+O limiar de decisão ($\tau$) não é fixado em 0.5, sendo otimizado no conjunto de validação para maximizar o **F1-Score** na curva Precision-Recall. As métricas finais incluem Acurácia, Precisão, Recall, F1-score, Balanced Accuracy, ROC-AUC e PR-AUC. O produto final é um mecanismo reprodutível que permite ordenar áreas por probabilidade estimada, servindo como base para a expansão da prospecção mineral da **Frontera Minerals**.
 
 ## 4. Trabalhos Relacionados
 
