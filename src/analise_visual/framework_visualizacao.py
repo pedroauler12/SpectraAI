@@ -1,5 +1,15 @@
-"""Funções reutilizáveis de visualização para treinamento e avaliação de modelos CNN."""
+"""
+Funções reutilizáveis de visualização para treinamento e avaliação de modelos CNN.
 
+Este módulo fornece utilitários para:
+- Plotar curvas de loss (treino e validação)
+- Plotar curvas de acurácia
+- Plotar matriz de confusão (normalizada ou absoluta)
+
+As funções retornam o objeto matplotlib.figure.Figure,
+permitindo customizações adicionais externas.
+
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -145,3 +155,20 @@ def plot_confusion_matrix(
 
     fig.tight_layout()
     return _finalize_plot(fig, save_path, show)
+
+
+"""
+
+Exemplo de como usar:
+from framework.visualizacao.py import plot_loss_curve
+
+# Simulando histórico de treino
+train_loss = [0.9, 0.7, 0.5, 0.4, 0.35]
+val_loss = [1.0, 0.8, 0.6, 0.55, 0.50]
+
+fig = plot_loss_curve(
+    train_loss=train_loss,
+    val_loss=val_loss,
+    save_path="outputs/loss_curve.png",
+    show=True
+)"""
