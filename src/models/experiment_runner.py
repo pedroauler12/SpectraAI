@@ -237,12 +237,16 @@ class ExperimentRunner:
         result = {
             "config_name": self.config_name,
             "experiment_dir": str(self.experiment_dir),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "final_train_loss": float(history_dict["loss"][-1]),
             "final_train_acc": float(history_dict["accuracy"][-1]),
             "final_val_loss": float(history_dict["val_loss"][-1]),
             "final_val_acc": float(history_dict["val_accuracy"][-1]),
             "epochs_run": len(history_dict["loss"]),
         }
+        
+        # 7. Log em CSV
+        self._log_result_to_csv(result)
         
         print(f"\n{'='*60}")
         print(f"RESUMO DO EXPERIMENTO:")
@@ -254,6 +258,33 @@ class ExperimentRunner:
                 print(f"  {k}: {v}")
         
         return result
+    
+    def _log_result_to_csv(self, result: Dict[str, Any]) -> None:
+        """Salva resultado em CSV com append (rastreamento de experimentos)."""
+        output_cfg = self.config["output"]
+        csv_path = Path(output_cfg["models_dir"]) / "experiments_log.csv"
+        
+        # Preparar dados para CSV
+        row = pd.DataFrame([{
+            "timestamp": result["timestamp"],
+            "config_name": result["config_name"],
+            "train_loss": result["final_train_loss"],
+            "train_acc": result["final_train_acc"],
+            "val_loss": result["final_val_loss"],
+            "val_acc": result["final_val_acc"],
+            "epochs": result["epochs_run"],
+            "experiment_dir": result["experiment_dir"],
+        }])
+        
+        # Append ou criar novo
+        if csv_path.exists():
+            df_existing = pd.read_csv(csv_path)
+            df_updated = pd.concat([df_existing, row], ignore_index=True)
+            df_updated.to_csv(csv_path, index=False)
+            print(f"✓ Resultado adicionado ao log: {csv_path}")
+        else:
+            row.to_csv(csv_path, index=False)
+            print(f"✓ Novo log de experimentos criado: {csv_path}")
 
 
 def run_multiple_experiments(config_names: list,
