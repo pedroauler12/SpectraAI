@@ -13,7 +13,7 @@ Este relatório documenta o design experimental, as configurações testadas, a 
 
 ## 2. Arquitetura Base da CNN
 
-A CNN do projeto foi implementada em `src/models/cnn_builder.py` (branch `95-a5-cnn-arch-conv2d-pooling-dense-layers`, Larissa Souza) e posteriormente estendida com regularização em `101-regularization-code` (Larissa Souza, sobre base da Drielly Farias).
+A CNN do projeto foi implementada em `src/models/cnn_builder.py` (branch `95-a5-cnn-arch-conv2d-pooling-dense-layers`,  e posteriormente estendida com regularização em `101-regularization-code` )
 
 ### 2.1 Estrutura das camadas
 
