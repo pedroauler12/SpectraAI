@@ -1,0 +1,38 @@
+# Baseline CNN configuration
+# Input: 128x128x9 (ASTER multispectral)
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  
+  # Convolutional layers
+  filters: [32, 64]
+  kernel_size: 3
+  pool_size: 2
+  
+  # Regularization
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.2
+  dense_dropout_rate: 0.5
+  
+  # Dense layers
+  dense_units: 128
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: outputs/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true

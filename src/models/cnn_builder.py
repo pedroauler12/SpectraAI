@@ -55,7 +55,7 @@ Referências:
 
 from typing import Tuple, Optional
 import tensorflow as tf
-from tensorflow.keras import Sequential, layers
+from tensorflow.keras import Sequential, layers, regularizers
 
 
 def build_cnn_model(
@@ -66,6 +66,8 @@ def build_cnn_model(
     kernel_size: Tuple[int, int] = (3, 3),
     dense_units: int = 128,
     dropout_rate: float = 0.5,
+    l2_regularizer: float = 0.001,
+    conv_dropout_rate: float = 0.2,
 ) -> Sequential:
     """
     Constrói um modelo CNN com arquitetura:
@@ -98,9 +100,19 @@ def build_cnn_model(
         Valores típicos: 64, 128, 256
 
     dropout_rate : float, default=0.5
-        Taxa de dropout para regularização (evita overfitting).
+        Taxa de dropout para regularização na camada Dense (evita overfitting).
         Valores típicos: 0.3 a 0.5
         Se 0, nenhum dropout é aplicado
+
+    l2_regularizer : float, default=0.001
+        Coeficiente de regularização L2 (penalidade de peso) para Conv2D e Dense.
+        Valores típicos: 0.0001 a 0.01
+        Se 0, nenhuma regularização L2 é aplicada
+
+    conv_dropout_rate : float, default=0.2
+        Taxa de dropout para camadas convolucionais (reduz overfitting em Conv2D).
+        Valores típicos: 0.1 a 0.3 (menor que dropout_rate)
+        Se 0, nenhum dropout é aplicado após Conv2D
 
     Retorna
     -------
@@ -140,82 +152,82 @@ def build_cnn_model(
     if not (0 <= dropout_rate < 1):
         raise ValueError("dropout_rate deve estar entre 0 e 1")
 
-    model = Sequential([
+    if not (0 <= l2_regularizer <= 1):
+        raise ValueError("l2_regularizer deve estar entre 0 e 1")
+
+    if not (0 <= conv_dropout_rate < 1):
+        raise ValueError("conv_dropout_rate deve estar entre 0 e 1")
+
+    layers_list = [
         # ========== INPUT LAYER ==========
-        # Define a forma dos dados de entrada
         layers.Input(shape=input_shape),
 
-        # ========== PRIMEIRA CONVOLUÇÃO ==========
-        # Conv2D: extrai features locais usando 32 filtros 3x3
-        # Padding='same': mantém dimensões espaciais
-        # ReLU: ativação não-linear
+        # ========== PRIMEIRA CONVOLUÇÃO COM REGULARIZAÇÃO L2 ==========
         layers.Conv2D(
             filters=conv1_filters,
             kernel_size=kernel_size,
             padding='same',
             activation='relu',
+            kernel_regularizer=regularizers.l2(l2_regularizer) if l2_regularizer > 0 else None,
             name='conv2d_1'
         ),
+    ]
 
+    # Adicionar Dropout após primeira Conv se configurado
+    if conv_dropout_rate > 0:
+        layers_list.append(
+            layers.Dropout(rate=conv_dropout_rate, name='dropout_conv1')
+        )
+
+    layers_list.extend([
         # ========== PRIMEIRO POOLING ==========
-        # MaxPooling2D: reduz dimensionalidade mantendo features mais relevantes
-        # Pool size (2,2) reduz dimensões pela metade
-        layers.MaxPooling2D(
-            pool_size=(2, 2),
-            strides=2,
-            name='maxpooling2d_1'
-        ),
+        layers.MaxPooling2D(pool_size=(2, 2), strides=2, name='maxpooling2d_1'),
 
-        # ========== SEGUNDA CONVOLUÇÃO ==========
-        # Conv2D: extrai features mais complexas usando 64 filtros
-        # Trabalha com representação reduzida do pooling anterior
+        # ========== SEGUNDA CONVOLUÇÃO COM REGULARIZAÇÃO L2 ==========
         layers.Conv2D(
             filters=conv2_filters,
             kernel_size=kernel_size,
             padding='same',
             activation='relu',
+            kernel_regularizer=regularizers.l2(l2_regularizer) if l2_regularizer > 0 else None,
             name='conv2d_2'
         ),
+    ])
 
+    # Adicionar Dropout após segunda Conv se configurado
+    if conv_dropout_rate > 0:
+        layers_list.append(
+            layers.Dropout(rate=conv_dropout_rate, name='dropout_conv2')
+        )
+
+    layers_list.extend([
         # ========== SEGUNDO POOLING ==========
-        # MaxPooling2D: redução dimensional adicional
-        layers.MaxPooling2D(
-            pool_size=(2, 2),
-            strides=2,
-            name='maxpooling2d_2'
-        ),
+        layers.MaxPooling2D(pool_size=(2, 2), strides=2, name='maxpooling2d_2'),
 
         # ========== FLATTEN ==========
-        # Converte matriz 3D em vetor 1D para camadas Dense
-        layers.Flatten(
-            name='flatten'
-        ),
+        layers.Flatten(name='flatten'),
 
-        # ========== CAMADA DENSA OCULTA ==========
-        # Camada fully connected para aprender representações não-lineares
+        # ========== CAMADA DENSA OCULTA COM REGULARIZAÇÃO L2 ==========
         layers.Dense(
             units=dense_units,
             activation='relu',
+            kernel_regularizer=regularizers.l2(l2_regularizer) if l2_regularizer > 0 else None,
             name='dense_hidden'
         ),
 
-        # ========== DROPOUT (REGULARIZAÇÃO) ==========
-        # Desativa aleatoriamente neurônios durante treinamento
-        # Reduz overfitting melhorando generalização
-        layers.Dropout(
-            rate=dropout_rate,
-            name='dropout'
-        ),
+        # ========== DROPOUT NA CAMADA DENSA ==========
+        layers.Dropout(rate=dropout_rate, name='dropout_dense'),
 
-        # ========== CAMADA DE SAÍDA ==========
-        # Dense final com softmax para probabilidades das classes
-        # Se n_classes=2, usar 'sigmoid' é equivalente (alternativa)
+        # ========== CAMADA DE SAÍDA COM REGULARIZAÇÃO L2 ==========
         layers.Dense(
             units=n_classes,
             activation='softmax' if n_classes > 2 else 'sigmoid',
+            kernel_regularizer=regularizers.l2(l2_regularizer) if l2_regularizer > 0 else None,
             name='output'
         ),
     ])
+
+    model = Sequential(layers_list)
 
     # ========== COMPILAÇÃO DO MODELO ==========
     # Otimizador: Adam (adapta taxa de aprendizado por parâmetro)
