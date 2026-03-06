@@ -2,7 +2,7 @@
 
 ### Autores: Drielly Santana Farias, Eduardo Farias Rizk, Giovanna Fátima de Britto Vieira, Larissa Martins Pereira de Souza, Lucas Ramenzoni Jorge,  Mateus Beppler Pereira, Pedro Auler de Barros Martins
 
-## 1. Introdução (citações corrigidas)
+## 1. Introdução
 
 &emsp;&emsp; Os Elementos Terras Raras (Rare Earth Elements — REE) compõem um grupo de 17 elementos amplamente empregados em tecnologias de alto valor agregado, incluindo eletrônica, aplicações industriais avançadas e sistemas energéticos. A relevância econômica e estratégica desses elementos tem sido reiterada por órgãos oficiais e relatórios setoriais recentes, que destacam vulnerabilidades em cadeias globais de suprimento e riscos associados a alta concentração geográfica de produção e refino (UNITED STATES GEOLOGICAL SURVEY, 2025).
 
@@ -11,6 +11,29 @@
 &emsp;&emsp; Nesse contexto, o Advanced Spaceborne Thermal Emission and Reflection Radiometer (ASTER) consolidou-se como um dos sensores mais utilizados em mapeamento litológico e exploração mineral por disponibilizar bandas espectrais relevantes em VNIR e SWIR, além de histórico robusto de aplicações documentadas na literatura (ABRAMS; YAMAGUCHI, 2019; RAMSEY; FLYNN, 2020). No entanto, a interpretação manual de cenas multiespectrais permanece limitada pela alta dimensionalidade espectral, heterogeneidade espacial e pela sutileza de padrões associados a mineralizações, o que pode introduzir subjetividade e restringir a reprodutibilidade dos resultados.
 
 &emsp;&emsp; Diante disso, este trabalho apresenta uma proposta metodológica inicial para construção de um pipeline de ciência de dados geoespaciais, utilizando imagens ASTER e dados de referência fornecidos pela Frontera Minerals, com o objetivo de transformar as cenas em um conjunto supervisionado de amostras rotuladas e avaliar modelos de aprendizado de máquina e visão computacional para estimar, de forma probabilística, o potencial prospectivo em áreas de interesse. A proposta privilegia a reprodutibilidade do processamento e a geração de evidências quantitativas que possam apoiar, em ciclos posteriores, validação geológica e refinamento do método.
+
+&emsp;&emsp;Historicamente, grande parte das aplicações de aprendizado de máquina em sensoriamento remoto mineral tem sido conduzida a partir de representações tabulares dos dados espectrais, nas quais cada pixel ou amostra é descrito como um vetor de atributos derivados das bandas disponíveis. Nesse contexto, modelos clássicos e redes neurais rasas, como Multi-Layer Perceptrons (MLP), foram amplamente empregados para tarefas de classificação litológica ou identificação de assinaturas minerais, sobretudo por sua capacidade de modelar relações não lineares entre variáveis espectrais. Entretanto, essa abordagem apresenta uma limitação importante: ao tratar cada amostra como um vetor independente, a estrutura espacial presente nas imagens multiespectrais é, em grande parte, descartada. Em problemas geológicos, essa informação espacial pode ser relevante, uma vez que processos de alteração mineral, zonas de contato litológico e padrões geomorfológicos tendem a se manifestar como estruturas contínuas ou texturas distribuídas no espaço.
+
+&emsp;&emsp;Diante dessa limitação, abordagens baseadas em visão computacional têm sido cada vez mais exploradas em dados de sensoriamento remoto. Em particular, redes neurais convolucionais (Convolutional Neural Networks — CNN) permitem aprender automaticamente padrões espaciais e espectrais a partir de janelas de imagem, preservando relações de vizinhança entre pixels e capturando estruturas que dificilmente seriam representadas por atributos tabulares isolados. No contexto de prospecção mineral, essa capacidade pode contribuir para identificar padrões sutis associados a zonas de alteração ou assinaturas espectrais distribuídas espacialmente, potencialmente ampliando a capacidade de generalização dos modelos.
+
+&emsp;&emsp;Assim, além da avaliação inicial de modelos supervisionados clássicos como baseline, este trabalho também considera a perspectiva de evolução metodológica para abordagens baseadas em visão computacional. A hipótese central é que a incorporação de informação espacial por meio de representações em forma de chips multiespectrais possa permitir a extração automática de características relevantes, fornecendo uma base mais adequada para modelagem preditiva em tarefas de mapeamento prospectivo de elementos de terras raras.
+
+#### 1.1 Objetivos da Pesquisa
+##### Objetivo Geral
+
+&emsp;&emsp;Desenvolver e avaliar um modelo de Deep Learning aplicado à visão computacional capaz de analisar imagens multiespectrais do sensor ASTER e estimar, de forma probabilística, o potencial de ocorrência de elementos de Terras Raras (REE), produzindo um ranking de prospectividade mineral que auxilie a priorização de áreas para campanhas de pesquisa geológica.
+
+##### Objetivos Específicos
+
+A partir desse objetivo geral, delineiam-se os seguintes objetivos específicos:
+
+Realizar engenharia de atributos espectrais, investigando transformações e combinações de bandas do ASTER capazes de destacar assinaturas espectrais relacionadas a minerais de alteração hidrotermal (argilas, óxidos e carbonatos), frequentemente associados a sistemas mineralizados.
+
+Desenvolver e treinar modelos CNN, com foco em arquiteturas de visão computacional capazes de extrair padrões espaciais e espectrais presentes nas imagens multiespectrais.
+
+Avaliar o desempenho dos modelos treinados utilizando áreas com ocorrências conhecidas de Terras Raras, por meio das métricas f1-score e AUC-ROC.
+
+Produzir um ranking de áreas com maior potencial prospectivo, permitindo priorizar regiões para futuras etapas de pesquisa mineral e campanhas de campo.
 
 ## 2. Fundamentação Teórica
 
