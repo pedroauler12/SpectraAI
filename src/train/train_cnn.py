@@ -78,6 +78,10 @@ def train_cnn(
     csv_path = Path(csv_log_path)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
 
+    logger.info("=" * 60)
+    logger.info("INÍCIO DO TREINAMENTO CNN")
+    logger.info("=" * 60)
+
     # Compilar modelo com optimizer e loss especificados
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
@@ -85,18 +89,22 @@ def train_cnn(
         metrics=["accuracy"],
     )
 
-    logger.info("Modelo compilado: optimizer=Adam(lr=%s), loss=sparse_categorical_crossentropy", learning_rate)
-    logger.info("Dados de treino: %s, labels: %s", X_train.shape, y_train.shape)
-    logger.info("Epochs=%d, batch_size=%d, validation_split=%.2f", epochs, batch_size, validation_split)
+    logger.info("[Compilação] optimizer=Adam(lr=%s), loss=sparse_categorical_crossentropy", learning_rate)
+    logger.info("[Dados] X_train shape: %s, y_train shape: %s", X_train.shape, y_train.shape)
+    logger.info("[Dados] Classes únicas: %s", np.unique(y_train))
+    logger.info("[Dados] Distribuição de classes: %s", dict(zip(*np.unique(y_train, return_counts=True))))
+    logger.info("[Hiperparâmetros] epochs=%d, batch_size=%d, validation_split=%.2f", epochs, batch_size, validation_split)
+    logger.info("[Modelo] Total de parâmetros: %d", model.count_params())
 
     # Callbacks
     callbacks = [CSVLogger(str(csv_path), separator=",", append=False)]
     if extra_callbacks:
         callbacks.extend(extra_callbacks)
 
-    logger.info("CSVLogger -> %s", csv_path)
+    logger.info("[Callback] CSVLogger -> %s", csv_path)
 
     # Treinamento
+    logger.info("[Treino] Iniciando model.fit()...")
     start = time.time()
     history = model.fit(
         X_train,
@@ -109,14 +117,22 @@ def train_cnn(
     )
     training_time = time.time() - start
 
-    logger.info("Treinamento concluído em %.2fs", training_time)
-    logger.info(
-        "Final — train_loss=%.4f, train_acc=%.4f, val_loss=%.4f, val_acc=%.4f",
-        history.history["loss"][-1],
-        history.history["accuracy"][-1],
-        history.history["val_loss"][-1],
-        history.history["val_accuracy"][-1],
-    )
+    # Resumo final
+    logger.info("=" * 60)
+    logger.info("RESULTADO DO TREINAMENTO")
+    logger.info("=" * 60)
+    logger.info("[Tempo] Duração total: %.2fs", training_time)
+    logger.info("[Época final] train_loss=%.4f, train_acc=%.4f",
+                history.history["loss"][-1], history.history["accuracy"][-1])
+    logger.info("[Época final] val_loss=%.4f, val_acc=%.4f",
+                history.history["val_loss"][-1], history.history["val_accuracy"][-1])
+    logger.info("[Melhor val_loss] %.4f (época %d)",
+                min(history.history["val_loss"]),
+                int(np.argmin(history.history["val_loss"])) + 1)
+    logger.info("[Melhor val_acc] %.4f (época %d)",
+                max(history.history["val_accuracy"]),
+                int(np.argmax(history.history["val_accuracy"])) + 1)
+    logger.info("=" * 60)
 
     return {
         "model": model,
