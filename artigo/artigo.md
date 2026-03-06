@@ -130,7 +130,7 @@ $$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
 
 &emsp;&emsp;A superioridade das CNNs na LULC reside na capacidade de aprender "texturas". Para a prospecção de Terras Raras, isso sugere que o modelo não deve olhar apenas para a cor do pixel, mas para o gradiente espectral da zona de alteração hidrotermal em que o mineral se formou e hoje está inserido.
 
-
+&emsp;&emsp;Dessa forma, a literatura de uso do solo fornece a base teórica para o uso de chips multiespectrais no SpectraAI: se a visão computacional consegue distinguir texturas complexas de solo e vegetação, ela possui o potencial necessário para identificar as assinaturas espaciais discretas de depósitos de ETR que modelos baseados apenas em tabelas de pixels tendem a ignorar.
 
 
 ## 5. Proposta Metodológica Preliminar
@@ -157,3 +157,5 @@ $$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
 **SUN, K.** et al. A Review of Mineral Prospectivity Mapping Using Deep Learning. *Minerals*, v. 14, n. 10, 1021, 2024. DOI: 10.3390/min14101021. Disponível em: [https://www.mdpi.com/2075-163X/14/10/1021](https://www.mdpi.com/2075-163X/14/10/1021). Acesso em: 26 fev. 2026.
 
 **UNITED STATES GEOLOGICAL SURVEY (USGS).** Interior Department releases final 2025 List of Critical Minerals. *U.S. Geological Survey*, 14 nov. 2025. Disponível em: [https://www.usgs.gov/news/science-snippet/interior-department-releases-final-2025-list-critical-minerals](https://www.usgs.gov/news/science-snippet/interior-department-releases-final-2025-list-critical-minerals). Acesso em: 26 fev. 2026.
+
+**TONG, X.** et al. Land-cover classification with high-resolution remote sensing images using transferable deep models. *Remote Sensing of Environment*, v. 237, 111322, 2020. DOI: 10.1016/j.rse.2019.111322. Disponível em: [https://doi.org/10.1016/j.rse.2019.111322](https://doi.org/10.1016/j.rse.2019.111322). Acesso em: 06 mar. 2026.
