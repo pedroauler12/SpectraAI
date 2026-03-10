@@ -1,0 +1,4 @@
+Bandas com maior variabilidade (B2, B5, B1) podem carregar maior poder discriminativo para classificacao.
+Existe redundancia espectral relevante em B1~B4 (r=1.00); B3~B4 (r=1.00); B1~B3 (r=1.00). Vale testar PCA/selecionador de features.
+Ha variacao entre imagens na media espectral. Hipotese: padroes temporais/atmosfericos influenciam os sinais e exigem normalizacao por cena.
+NDVI medio=0.482 (std=0.305). Testar mascaramento de vegetacao para reduzir ruido no alvo mineral.

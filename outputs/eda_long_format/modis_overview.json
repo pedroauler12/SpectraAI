@@ -1,0 +1,8 @@
+{
+  "sensor": "MODIS",
+  "n_rows_total": 109016100,
+  "n_rows_analysis": 109016100,
+  "n_columns": 8,
+  "n_bands": 7,
+  "n_images": 1575
+}
