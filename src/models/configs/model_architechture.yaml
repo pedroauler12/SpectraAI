@@ -25,7 +25,7 @@ model:
   optimizer: adam
 
   data:
-  dataset_path: outputs/pixels_dataset.csv
+  dataset_path: data/pixels_dataset.csv
   codes_path: data/extracted_codes.json
   normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
   normalization_method: zscore
