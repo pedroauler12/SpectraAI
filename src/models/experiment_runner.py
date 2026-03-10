@@ -13,6 +13,15 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
+from sklearn.metrics import (
+    confusion_matrix,
+    f1_score,
+    roc_auc_score,
+    recall_score,
+    precision_score,
+    balanced_accuracy_score,
+    average_precision_score,
+)
 
 from .cnn_config import (
     load_config,
@@ -42,6 +51,10 @@ class ExperimentRunner:
         self.model = None
         self.history = None
         self.experiment_dir = None
+        self.X_train = None
+        self.y_train = None
+        self.X_val = None
+        self.y_val = None
         
         print(f"✓ ExperimentRunner inicializado com config: {config_name}")
         print(f"  Configurações disponíveis: {list_available_configs()}")
@@ -152,7 +165,7 @@ class ExperimentRunner:
               y_train: np.ndarray,
               verbose: int = 1) -> Dict[str, Any]:
         """
-        Treina modelo.
+        Treina modelo com split train/val para calcular métricas posteriores.
         
         Args:
             X_train: Features
@@ -166,17 +179,32 @@ class ExperimentRunner:
             self.build_model()
         
         training_cfg = self.config["training"]
+        val_split = training_cfg["validation_split"]
+        
+        # Fazer split manual para ter acesso ao conjunto de validação
+        val_size = int(len(X_train) * val_split)
+        indices = np.random.RandomState(42).permutation(len(X_train))
+        val_indices = indices[:val_size]
+        train_indices = indices[val_size:]
+        
+        X_tr = X_train[train_indices]
+        y_tr = y_train[train_indices]
+        self.X_val = X_train[val_indices]
+        self.y_val = y_train[val_indices]
+        self.X_train = X_tr  # Guardar para referência
+        self.y_train = y_tr
         
         print(f"\n🚀 Iniciando treinamento...")
         print(f"  Batch size: {training_cfg['batch_size']}")
         print(f"  Epochs: {training_cfg['epochs']}")
         print(f"  Learning rate: {training_cfg['learning_rate']}")
+        print(f"  Train size: {len(X_tr)}, Val size: {len(self.X_val)}")
         
         self.history = self.model.fit(
-            X_train, y_train,
+            X_tr, y_tr,
             batch_size=training_cfg["batch_size"],
             epochs=training_cfg["epochs"],
-            validation_split=training_cfg["validation_split"],
+            validation_data=(self.X_val, self.y_val),
             verbose=verbose,
         )
         
@@ -201,11 +229,81 @@ class ExperimentRunner:
                 json.dump(self.history.history, f, indent=2)
             print(f"✓ Histórico salvo: {history_path}")
     
+    def _calculate_validation_metrics(self) -> Dict[str, Any]:
+        """
+        Calcula métricas detalhadas no conjunto de validação.
+        
+        Returns:
+            Dicionário com todas as métricas calculadas
+        """
+        if self.model is None or self.X_val is None or self.y_val is None:
+            return {}
+        
+        # Fazer predições
+        y_pred_proba = self.model.predict(self.X_val, verbose=0)
+        
+        # Para classificação binária ou multi-classe
+        if y_pred_proba.shape[1] == 1:
+            # Saída com um neurônio (sigmoid)
+            y_pred = (y_pred_proba.flatten() > 0.5).astype(int)
+            y_prob = y_pred_proba.flatten()
+        else:
+            # Saída com múltiplos neurônios (softmax)
+            y_pred = np.argmax(y_pred_proba, axis=1)
+            y_prob = np.max(y_pred_proba, axis=1)  # Confiança da predição
+        
+        y_true = self.y_val
+        
+        # Calcular métricas básicas
+        metrics = {
+            "val_accuracy": float(np.mean(y_pred == y_true)),
+            "val_precision": float(precision_score(y_true, y_pred, average='weighted', zero_division=0)),
+            "val_recall": float(recall_score(y_true, y_pred, average='weighted', zero_division=0)),
+            "val_f1": float(f1_score(y_true, y_pred, average='weighted', zero_division=0)),
+            "val_balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
+        }
+        
+        # AUC ROC - funciona para binário e multi-classe (one-vs-rest)
+        try:
+            if len(np.unique(y_true)) == 2:
+                # Binário
+                metrics["val_auc_roc"] = float(roc_auc_score(y_true, y_prob))
+                metrics["val_pr_auc"] = float(average_precision_score(y_true, y_prob))
+            else:
+                # Multi-classe
+                metrics["val_auc_roc"] = float(roc_auc_score(
+                    y_true, y_pred_proba, multi_class='ovr', average='weighted'
+                ))
+                metrics["val_pr_auc"] = None  # PR-AUC é mais complexo para multi-classe
+        except Exception as e:
+            print(f"  ⚠️ Não foi possível calcular AUC: {e}")
+            metrics["val_auc_roc"] = None
+            metrics["val_pr_auc"] = None
+        
+        # Matriz de confusão
+        cm = confusion_matrix(y_true, y_pred)
+        
+        # Para binário, extrair TP, FP, TN, FN
+        if cm.shape == (2, 2):
+            tn, fp, fn, tp = cm.ravel()
+            metrics["val_cm_tp"] = int(tp)
+            metrics["val_cm_fp"] = int(fp)
+            metrics["val_cm_tn"] = int(tn)
+            metrics["val_cm_fn"] = int(fn)
+            # Especificidade e Sensibilidade
+            metrics["val_specificity"] = float(tn / (tn + fp)) if (tn + fp) > 0 else 0
+            metrics["val_sensitivity"] = float(tp / (tp + fn)) if (tp + fn) > 0 else 0
+        else:
+            # Multi-classe: salvar matriz em JSON no arquivo de resultado
+            metrics["val_cm_string"] = str(cm.tolist())
+        
+        return metrics
+    
     def run_full_pipeline(self,
                          limit_samples: int = None,
                          verbose: int = 1) -> Dict[str, Any]:
         """
-        Executa pipeline completo: preparar dados → build → treinar → salvar.
+        Executa pipeline completo: preparar dados → build → treinar → salvar → métricas.
         
         Args:
             limit_samples: Limita amostras (para testes rápidos)
@@ -233,7 +331,10 @@ class ExperimentRunner:
         # 5. Salvar
         self.save_results()
         
-        # 6. Resumo
+        # 6. Calcular métricas detalhadas
+        validation_metrics = self._calculate_validation_metrics()
+        
+        # 7. Resumo
         result = {
             "config_name": self.config_name,
             "experiment_dir": str(self.experiment_dir),
@@ -243,9 +344,10 @@ class ExperimentRunner:
             "final_val_loss": float(history_dict["val_loss"][-1]),
             "final_val_acc": float(history_dict["val_accuracy"][-1]),
             "epochs_run": len(history_dict["loss"]),
+            **validation_metrics,  # Adicionar todas as métricas calculadas
         }
         
-        # 7. Log em CSV
+        # 8. Log em CSV
         self._log_result_to_csv(result)
         
         print(f"\n{'='*60}")
@@ -260,21 +362,44 @@ class ExperimentRunner:
         return result
     
     def _log_result_to_csv(self, result: Dict[str, Any]) -> None:
-        """Salva resultado em CSV com append (rastreamento de experimentos)."""
+        """
+        Salva resultado em CSV com append (rastreamento de experimentos).
+        Salva automaticamente todas as métricas do dicionário result.
+        """
         output_cfg = self.config["output"]
         csv_path = Path(output_cfg["models_dir"]) / "experiments_log.csv"
         
-        # Preparar dados para CSV
-        row = pd.DataFrame([{
+        # Preparar dados para CSV - usar todas as métricas do result
+        row_data = {
             "timestamp": result["timestamp"],
             "config_name": result["config_name"],
-            "train_loss": result["final_train_loss"],
-            "train_acc": result["final_train_acc"],
-            "val_loss": result["final_val_loss"],
-            "val_acc": result["final_val_acc"],
-            "epochs": result["epochs_run"],
+            "train_loss": result.get("final_train_loss"),
+            "train_acc": result.get("final_train_acc"),
+            "val_loss": result.get("final_val_loss"),
+            "val_acc": result.get("final_val_acc"),
+            "epochs": result.get("epochs_run"),
+            # Métricas adicionadas
+            "val_accuracy": result.get("val_accuracy"),
+            "val_precision": result.get("val_precision"),
+            "val_recall": result.get("val_recall"),
+            "val_f1": result.get("val_f1"),
+            "val_balanced_accuracy": result.get("val_balanced_accuracy"),
+            "val_auc_roc": result.get("val_auc_roc"),
+            "val_pr_auc": result.get("val_pr_auc"),
+            # Matriz de confusão (binário)
+            "val_cm_tp": result.get("val_cm_tp"),
+            "val_cm_fp": result.get("val_cm_fp"),
+            "val_cm_tn": result.get("val_cm_tn"),
+            "val_cm_fn": result.get("val_cm_fn"),
+            # Especificidade e Sensibilidade
+            "val_specificity": result.get("val_specificity"),
+            "val_sensitivity": result.get("val_sensitivity"),
+            # Matriz de confusão (multi-classe)
+            "val_cm_string": result.get("val_cm_string"),
             "experiment_dir": result["experiment_dir"],
-        }])
+        }
+        
+        row = pd.DataFrame([row_data])
         
         # Append ou criar novo
         if csv_path.exists():
