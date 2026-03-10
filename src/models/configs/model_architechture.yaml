@@ -17,14 +17,14 @@ model:
   # Camadas densas
   dense_units: 128
 
-  training:
+training:
   batch_size: 32
   epochs: 50
   learning_rate: 0.001
   validation_split: 0.2
   optimizer: adam
 
-  data:
+data:
   dataset_path: data/pixels_dataset.csv
   codes_path: data/extracted_codes.json
   normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
