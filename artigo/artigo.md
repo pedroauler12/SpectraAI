@@ -139,7 +139,6 @@ O limiar de decisão ($\tau$) não é fixado em 0.5, sendo otimizado no conjunto
 
 &emsp;&emsp;**Análise Crítica:** O framework DEEP-SEAM v1.0 (Luo et al., 2025) foca em dados multifonte complexos. O SpectraAI diferencia-se por buscar uma solução otimizada especificamente para o sensor ASTER em áreas de solo exposto, criando um especialista de domínio em imagens orbitais antes de escalar para a fusão de dados.
 
-
 ## 5. Proposta Metodológica Preliminar
 
   Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
