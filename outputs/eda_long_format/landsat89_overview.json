@@ -1,0 +1,8 @@
+{
+  "sensor": "Landsat 8/9",
+  "n_rows_total": 105977560,
+  "n_rows_analysis": 2000000,
+  "n_columns": 8,
+  "n_bands": 7,
+  "n_images": 1532
+}
