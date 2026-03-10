@@ -1,4 +1,6 @@
-timestamp,config_name,train_loss,train_acc,val_loss,val_acc,epochs,experiment_dir
+timestamp,config_name,train_loss,train_acc,val_loss,val_acc,epochs,val_accuracy,val_precision,val_recall,val_f1,val_balanced_accuracy,val_auc_roc,val_pr_auc,val_cm_tp,val_cm_fp,val_cm_tn,val_cm_fn,val_specificity,val_sensitivity,val_cm_string,experiment_dir
+2026-03-09 22:17:16,baseline,0.3177996277809143,0.987500011920929,1.2867088317871094,0.8500000238418579,50,0.85,0.8535353535353536,0.85,0.849624060150376,0.8500000000000001,0.5800000000000001,0.5371156621156621,8,1,9,2,0.9,0.8,,c:\Users\Inteli\Desktop\g01\outputs\trained_models\baseline_20260309_221622
+2026-03-09 22:19:01,baseline,0.33340826630592346,0.987500011920929,1.3967174291610718,0.8500000238418579,50,0.85,0.8535353535353536,0.85,0.849624060150376,0.8500000000000001,0.18,0.44739409799007324,8,1,9,2,0.9,0.8,,c:\Users\Inteli\Desktop\g01\outputs\trained_models\baseline_20260309_221807
 2026-03-05 10:56:43,baseline,0.6441640257835388,0.875,0.5553944110870361,1.0,50,c:\Users\Inteli\Documents\g01\outputs\trained_models\baseline_20260305_105622
 2026-03-05 10:57:56,baseline,0.5748007893562317,0.875,0.5314687490463257,1.0,50,c:\Users\Inteli\Documents\g01\outputs\trained_models\baseline_20260305_105742
 2026-03-05 10:59:05,higher_dropout,0.5872132778167725,0.875,0.5178695917129517,1.0,50,c:\Users\Inteli\Documents\g01\outputs\trained_models\higher_dropout_20260305_105850
