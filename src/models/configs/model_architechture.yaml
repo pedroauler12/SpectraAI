@@ -10,7 +10,7 @@ model:
   # Camadas convolucionais
 
   filters: [32, 64] ##numero de filtros para cada camada convolucional
-  kernel_size: 6
+  kernel_size: 5 #3 é o original 
   pool_size: 2
   
 ##--------##
