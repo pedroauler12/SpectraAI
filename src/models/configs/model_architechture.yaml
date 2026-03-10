@@ -3,12 +3,18 @@
 model:
   input_shape: [128, 128, 9]
   num_classes: 2
-  
+
+
+
+##----- Mudança na arquitetura do modelo -----##
   # Camadas convolucionais
-  filters: [32, 64]
-  kernel_size: 3
+
+  filters: [32, 64] ##numero de filtros para cada camada convolucional
+  kernel_size: 6
   pool_size: 2
   
+##--------##
+
   # Regularização
   l2_regularizer: 0.001
   conv_dropout_rate: 0.2
