@@ -15,8 +15,7 @@ env/
 venv/
 .env
 *.csv
+!outputs/trained_models/experiments_log.csv
 .venv/
-
-*.csv
-.claude/outputs/trained_models/**/*.h5
-.claude
+.claude/
+*.h5
