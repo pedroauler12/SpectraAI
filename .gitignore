@@ -19,3 +19,4 @@ venv/
 
 *.csv
 .claude/outputs/trained_models/**/*.h5
+.claude
