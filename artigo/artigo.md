@@ -106,6 +106,40 @@ O controle de **vazamento de dados (spatial leakage)** é rigoroso. A divisão e
 
 O limiar de decisão ($\tau$) não é fixado em 0.5, sendo otimizado no conjunto de validação para maximizar o **F1-Score** na curva Precision-Recall. As métricas finais incluem Acurácia, Precisão, Recall, F1-score, Balanced Accuracy, ROC-AUC e PR-AUC. O produto final é um mecanismo reprodutível que permite ordenar áreas por probabilidade estimada, servindo como base para a expansão da prospecção mineral da **Frontera Minerals**.
 
+
+#### 3.2.8 Arquitetura da CNN e Hiperparâmetros
+
+&emsp;&emsp; Para a etapa de visão computacional foi implementada uma Rede Neural Convolucional (CNN) simples, projetada como arquitetura inicial de experimentação sobre os chips multiespectrais ASTER. A rede recebe como entrada tensores correspondentes aos chips extraídos das cenas, preservando a estrutura espacial e espectral das imagens.
+
+&emsp;&emsp; A arquitetura segue uma configuração sequencial composta por blocos convolucionais e camadas densas. Cada bloco convolucional é formado por uma camada Conv2D, seguida de função de ativação ReLU e camada de max pooling, responsável pela redução progressiva da dimensionalidade espacial e pela extração de padrões locais relevantes. Após os blocos convolucionais, o tensor resultante é achatado (flatten) e processado por camadas densas responsáveis pela etapa de classificação binária (presença ou ausência de assinatura associada a áreas prospectivas).
+
+&emsp;&emsp; A camada final utiliza função de ativação sigmoid, produzindo uma probabilidade associada à classe positiva. Esse valor é posteriormente utilizado no ranqueamento de áreas prospectivas.
+
+&emsp;&emsp; Os principais hiperparâmetros utilizados no treinamento da CNN são apresentados na Tabela 1.
+
+Tabela 1 – Hiperparâmetros utilizados no treinamento da CNN
+
+| Hiperparâmetro     | Valor                                    |
+| ------------------ | ---------------------------------------- |
+| Learning Rate      | 0.001                                    |
+| Batch Size         | 32                                       |
+| Número de Epochs   | 50                                       |
+| Otimizador         | Adam                                     |
+| Função de perda    | Binary Cross-Entropy                     |
+| Função de ativação | ReLU (camadas internas), Sigmoid (saída) |
+
+Esses valores foram definidos inicialmente com base em práticas comuns em tarefas de classificação de imagens e serão refinados em experimentos futuros por meio de estratégias de ajuste de hiperparâmetros.
+
+#### 3.2.9 Protocolo Experimental
+
+&emsp;&emsp;O protocolo experimental foi estruturado para avaliar a capacidade dos modelos em identificar padrões associados à presença de elementos de terras raras a partir de dados multiespectrais ASTER. O conjunto de dados foi dividido em três subconjuntos: treinamento (60%), validação (20%) e teste (20%), respeitando o agrupamento por image_id para evitar vazamento de informação entre conjuntos.
+
+&emsp;&emsp;Durante o treinamento da CNN, o conjunto de validação foi utilizado para monitorar o desempenho do modelo e auxiliar na seleção do limiar de decisão e de configurações de treinamento. Ao final do processo, o modelo com melhor desempenho no conjunto de validação foi aplicado ao conjunto de teste, que permaneceu isolado durante todo o processo de desenvolvimento.
+
+&emsp;&emsp;A avaliação de desempenho considera múltiplas métricas para capturar diferentes aspectos da qualidade da classificação, incluindo Acurácia, Precisão, Recall, F1-score, Balanced Accuracy, ROC-AUC e PR-AUC. Essas métricas permitem analisar tanto a capacidade geral de classificação quanto o comportamento do modelo em cenários com possível desbalanceamento entre classes.
+
+&emsp;&emsp;O resultado final do protocolo experimental consiste na geração de escores probabilísticos para cada chip analisado, permitindo ordenar as regiões de interesse de acordo com seu potencial prospectivo estimado.
+
 ## 4. Trabalhos Relacionados
 
 #### Trabalho Relacionado 1: Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration
