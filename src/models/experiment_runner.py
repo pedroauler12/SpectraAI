@@ -219,7 +219,7 @@ class ExperimentRunner:
         output_cfg = self.config["output"]
         
         if output_cfg["save_model"] and self.model:
-            model_path = self.experiment_dir / "model.h5"
+            model_path = self.experiment_dir / "model.keras"
             self.model.save(model_path)
             print(f"✓ Modelo salvo: {model_path}")
         
