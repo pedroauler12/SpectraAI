@@ -74,7 +74,8 @@ Para mitigar ruídos e isolar a resposta mineralógica, o pipeline executou:
 
 1. **Filtragem de Máscaras:** Remoção de pixels contaminados por nuvens e densa cobertura vegetal (NDVI > limiar).
 2. **Reprojeção:** Conversão sistemática de coordenadas para WGS84, corrigindo discrepâncias entre os dados de campo (SAD69) e os produtos orbitais.
-3. **Cálculo de Índices Minerais:** Geração de *features* baseadas em razões de bandas como o **Índice de Argilas** $[B06 / (B05 + B04)]$.
+3. **Cálculo de Índices Minerais:** Geração de *features* baseadas em razões de bandas como o **Índice de Argilas**: 
+$$\text{Índice de Argilas} = \frac{B06}{B05 + B04}$$
 4. **Vetorização (Abordagem Tabular):** Para a fase inicial de baselines, cada amostra foi convertida em um vetor de alta dimensionalidade ($p = 147.456$), representando bandas brutas e janelas adjacentes.
 
 #### 3.2.3. Geração de Amostras (Chips) e Rotulagem
@@ -151,6 +152,8 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 
 &emsp;&emsp; Essa trajetória documentada por Abrams e Yamaguchi (2019) corrobora o problema e a justificativa metodológica que escolhemos. O artigo confirma que as imagens ASTER possuem dados  suficientes para caracterizar as assinaturas espectrais associadas a depósitos minerais. No entanto, a alta dimensionalidade e a complexidade espacial desses dados tornam a análise manual desafiadora, especialmente para padrões sutis. Dessa forma, o histórico literário valida a criação do pipeline de ciência de dados e o uso de algoritmos de Deep Learning e Visão Computacional, atestando a viabilidade técnica de utilizar os dados multiespectrais ASTER como a principal fonte de evidências para estimar e rankear áreas prospectivas de forma mais objetiva, escalável e probabilística.
 
+&emsp;&emsp;**Análise Crítica:** Embora Abrams e Yamaguchi (2019) validem o potencial do ASTER, a revisão foca predominantemente em métodos de interpretação visual ou estatística clássica. O SpectraAI avança ao propor a automação dessa interpretação via Deep Learning, reduzindo a dependência da expertise subjetiva do analista humano mencionada pelos autores.
+
 #### Trabalho Relacionado: Machine Learning-Based Lithological Mapping from ASTER Remote-Sensing Imagery
 
 &emsp;&emsp; Um avanço recente e relevante é o estudo de Bahrami et al. (2024), que investiga mapeamento litológico automatizado a partir de imagens ASTER por meio de uma comparação sistemática entre algoritmos de machine learning tradicionais (Random Forest, SVM, Gradient Boosting e XGBoost) e uma abordagem de deep learning (ANN) aplicada ao caso da região mineralizada de Sar-Cheshmeh (Irã). O trabalho se destaca por estruturar um pipeline comparável ao de exploração mineral baseada em sensoriamento remoto, incorporando engenharia/seleção de atributos espectrais (features derivadas de bandas e análise de correlação/importance) e avaliando quantitativamente o desempenho dos modelos via acurácia global para diferentes classes litológicas. ([MDPI][1])
@@ -158,6 +161,8 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 &emsp;&emsp; Como contribuição para este projeto, Bahrami et al. reforçam que o ASTER mantém alta utilidade para tarefas de classificação litológica e identificação indireta de minerais quando combinado com métodos supervisionados, além de evidenciar que escolhas de pré-processamento e seleção de variáveis afetam significativamente a qualidade do mapa final. ([MDPI][1])
 
 &emsp;&emsp; Entretanto, há limitações importantes quando comparamos com a proposta da Frontera Minerals. Primeiro, o estudo é orientado a classes litológicas em um contexto regional específico, não sendo desenhado diretamente para um problema de “detecção/ranking prospectivo” (ex.: presença/ausência de assinatura associada a Terras Raras em torno de ocorrências conhecidas). Segundo, o trabalho depende de um conjunto de treinamento bem definido para classes do mapeamento local, enquanto o desafio do projeto envolve generalização e rotulagem positiva/negativa por proximidade geográfica (chips ao redor de coordenadas de referência), o que tende a introduzir ruído de rótulo e exigir estratégias de validação e modelagem. Ainda assim, o artigo oferece um baseline metodológico sólido para justificar a etapa de comparação entre modelos clássicos e redes neurais usando ASTER, além de servir de referência para decisões de features e avaliação.
+
+&emsp;&emsp;**Análise Crítica:** A lacuna identificada no trabalho de Bahrami et al. (2024) reside na abordagem puramente tabular. Ao ignorar o contexto espacial adjacente ao pixel, o modelo perde a continuidade geológica. Nosso projeto resolve essa limitação através do uso de chips espaciais e convoluções, preservando a textura do terreno.
 
 ### Trabalho Relacionado: Redes Neurais para Prospecção de Terras Raras
 
@@ -167,6 +172,7 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 
 &emsp;&emsp;Essa convergência entre modelos _data-driven_ e a necessidade de interpretar assinaturas minerais complexas corrobora a adoção de redes neurais no SpectraAI. Ao utilizar redes neurais e visão computacional para processar imagens ASTER, o projeto promove o ranqueamento de áreas prospectivas de terras raras de forma escalável, objetiva e com alta fidelidade geológica.
 
+&emsp;&emsp;**Análise Crítica:** O framework DEEP-SEAM v1.0 (Luo et al., 2025) foca em dados multifonte complexos. O SpectraAI diferencia-se por buscar uma solução otimizada especificamente para o sensor ASTER em áreas de solo exposto, criando um especialista de domínio em imagens orbitais antes de escalar para a fusão de dados.
 
 ## 5. Proposta Metodológica Preliminar
 
