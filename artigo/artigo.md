@@ -136,10 +136,9 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 
 &emsp;&emsp;Durante o treinamento da CNN, o conjunto de validação foi utilizado para monitorar o desempenho do modelo e auxiliar na seleção do limiar de decisão e de configurações de treinamento. Ao final do processo, o modelo com melhor desempenho no conjunto de validação foi aplicado ao conjunto de teste, que permaneceu isolado durante todo o processo de desenvolvimento.
 
-&emsp;&emsp;A avaliação de desempenho considera múltiplas métricas para capturar diferentes aspectos da qualidade da classificação, incluindo Acurácia, Precisão, Recall, F1-score, Balanced Accuracy, ROC-AUC e PR-AUC. Essas métricas permitem analisar tanto a capacidade geral de classificação quanto o comportamento do modelo em cenários com possível desbalanceamento entre classes.
+&emsp;&emsp;A avaliação de desempenho considera métricas para capturar diferentes aspectos da qualidade da classificação, incluindo F1-score e ROC-AUC . Essas métricas permitem analisar tanto a capacidade geral de classificação quanto o comportamento do modelo em cenários com possível desbalanceamento entre classes.
 
-&emsp;&emsp;O resultado final do protocolo experimental consiste na geração de escores probabilísticos para cada chip analisado, permitindo ordenar as regiões de interesse de acordo com seu potencial prospectivo estimado.
-
+&emsp;&emsp;Para garantir a reprodutibilidade computacional do pipeline, todas as etapas de processamento, geração de chips, engenharia de atributos e treinamento dos modelos foram implementadas em ambiente Python utilizando bibliotecas amplamente adotadas em ciência de dados geoespaciais e aprendizado de máquina.As etapas de modelagem supervisionada e avaliação utilizaram scikit-learn e TensorFlow/Keras. O pipeline foi estruturado de forma modular, permitindo a repetição sistemática dos experimentos a partir de parâmetros controlados, incluindo sementes aleatórias fixas para geração de amostras e divisão de dados. Essa abordagem garante consistência entre execuções e facilita a replicação dos resultados em estudos futuros ou em novas áreas de interesse geológico.
 ## 4. Trabalhos Relacionados
 
 #### Trabalho Relacionado 1: Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration
