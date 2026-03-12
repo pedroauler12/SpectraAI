@@ -1,22 +1,31 @@
-# Aumentar dropout e reduzir learning rate
+# Baseline CNN com Data Augmentation ativado
+# Mesmo que baseline.yaml, com augmentation habilitado para comparacao de custo
+
 model:
   input_shape: [128, 128, 9]
   num_classes: 2
-  
+
   filters: [32, 64]
   kernel_size: 3
   pool_size: 2
-  
+
   l2_regularizer: 0.001
-  conv_dropout_rate: 0.3      # Aumentado de 0.2
-  dense_dropout_rate: 0.6     # Aumentado de 0.5
-  
+  conv_dropout_rate: 0.2
+  dense_dropout_rate: 0.5
+
   dense_units: 128
+
+  augmentation:
+    enabled: true
+    flip_mode: "horizontal_and_vertical"
+    rotation_factor: 0.08
+    contrast_factor: 0.2
+    seed: 42
 
 training:
   batch_size: 32
   epochs: 50
-  learning_rate: 0.0005       # Diminuído de 0.001
+  learning_rate: 0.001
   validation_split: 0.2
   optimizer: adam
 

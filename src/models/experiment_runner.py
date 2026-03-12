@@ -5,6 +5,7 @@ Gerencia treinamento, logging e salvamento de resultados.
 
 import os
 import json
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import Tuple, Dict, Any
@@ -33,6 +34,7 @@ from .cnn_config import (
     list_available_configs,
 )
 from .cnn_builder import build_cnn_model
+from .cnn_tf_data_pipeline import build_data_augmentation_layer
 from .cnn_data_prep import prepare_cnn_inputs
 
 
@@ -51,11 +53,13 @@ class ExperimentRunner:
         self.model = None
         self.history = None
         self.experiment_dir = None
+        self.training_time = None
+        self.augmentation_enabled = False
         self.X_train = None
         self.y_train = None
         self.X_val = None
         self.y_val = None
-        
+
         print(f"✓ ExperimentRunner inicializado com config: {config_name}")
         print(f"  Configurações disponíveis: {list_available_configs()}")
     
@@ -118,9 +122,23 @@ class ExperimentRunner:
         """Constrói modelo CNN com configuração."""
         model_cfg = self.config["model"]
         training_cfg = self.config["training"]
-        
+
         print(f"\n🏗️ Construindo modelo...")
-        
+
+        # Augmentation
+        aug_cfg = model_cfg.get("augmentation", {})
+        self.augmentation_enabled = aug_cfg.get("enabled", False)
+
+        aug_layer = None
+        if self.augmentation_enabled:
+            aug_layer = build_data_augmentation_layer(
+                flip_mode=aug_cfg.get("flip_mode", "horizontal_and_vertical"),
+                rotation_factor=aug_cfg.get("rotation_factor", 0.08),
+                contrast_factor=aug_cfg.get("contrast_factor", 0.2),
+                seed=aug_cfg.get("seed", 42),
+            )
+            print(f"  ✓ Data Augmentation ativado")
+
         filters = model_cfg["filters"]
         self.model = build_cnn_model(
             input_shape=tuple(model_cfg["input_shape"]),
@@ -132,15 +150,16 @@ class ExperimentRunner:
             conv_dropout_rate=model_cfg["conv_dropout_rate"],
             dropout_rate=model_cfg["dense_dropout_rate"],
             dense_units=model_cfg["dense_units"],
+            augmentation_layer=aug_layer,
         )
-        
+
         # Compilar
         self.model.compile(
             optimizer=keras.optimizers.Adam(learning_rate=training_cfg["learning_rate"]),
             loss="sparse_categorical_crossentropy",
             metrics=["accuracy"],
         )
-        
+
         print(f"✓ Modelo compilado!")
         return self.model
     
@@ -200,6 +219,7 @@ class ExperimentRunner:
         print(f"  Learning rate: {training_cfg['learning_rate']}")
         print(f"  Train size: {len(X_tr)}, Val size: {len(self.X_val)}")
         
+        start_time = time.time()
         self.history = self.model.fit(
             X_tr, y_tr,
             batch_size=training_cfg["batch_size"],
@@ -207,7 +227,8 @@ class ExperimentRunner:
             validation_data=(self.X_val, self.y_val),
             verbose=verbose,
         )
-        
+        self.training_time = time.time() - start_time
+
         print(f"✓ Treinamento concluído!")
         return self.history.history
     
@@ -344,6 +365,8 @@ class ExperimentRunner:
             "final_val_loss": float(history_dict["val_loss"][-1]),
             "final_val_acc": float(history_dict["val_accuracy"][-1]),
             "epochs_run": len(history_dict["loss"]),
+            "training_time_seconds": self.training_time,
+            "augmentation_enabled": self.augmentation_enabled,
             **validation_metrics,  # Adicionar todas as métricas calculadas
         }
         
@@ -397,8 +420,10 @@ class ExperimentRunner:
             # Matriz de confusão (multi-classe)
             "val_cm_string": result.get("val_cm_string"),
             "experiment_dir": result["experiment_dir"],
+            "training_time_seconds": result.get("training_time_seconds"),
+            "augmentation_enabled": result.get("augmentation_enabled", False),
         }
-        
+
         row = pd.DataFrame([row_data])
         
         # Append ou criar novo
