@@ -18,3 +18,8 @@ venv/
 !outputs/trained_models/experiments_log.csv
 .venv/
 .claude/
+.venv/
+__pycache__/
+outputs/trained_models/
+*.keras
+data/

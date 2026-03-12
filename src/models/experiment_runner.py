@@ -32,7 +32,7 @@ from .cnn_config import (
     save_experiment_config,
     list_available_configs,
 )
-from .cnn_builder import build_cnn_model
+from .cnn_builder import build_cnn_model, build_deep_cnn_model
 from .cnn_data_prep import prepare_cnn_inputs
 
 
@@ -122,17 +122,31 @@ class ExperimentRunner:
         print(f"\n🏗️ Construindo modelo...")
         
         filters = model_cfg["filters"]
-        self.model = build_cnn_model(
-            input_shape=tuple(model_cfg["input_shape"]),
-            n_classes=model_cfg["num_classes"],
-            conv1_filters=filters[0],
-            conv2_filters=filters[1],
-            kernel_size=model_cfg["kernel_size"],
-            l2_regularizer=model_cfg["l2_regularizer"],
-            conv_dropout_rate=model_cfg["conv_dropout_rate"],
-            dropout_rate=model_cfg["dense_dropout_rate"],
-            dense_units=model_cfg["dense_units"],
-        )
+
+        if len(filters) > 2:
+            # Arquitetura profunda com N blocos convolucionais
+            self.model = build_deep_cnn_model(
+                input_shape=tuple(model_cfg["input_shape"]),
+                n_classes=model_cfg["num_classes"],
+                filters_list=filters,
+                kernel_size=model_cfg["kernel_size"],
+                l2_regularizer=model_cfg["l2_regularizer"],
+                conv_dropout_rate=model_cfg["conv_dropout_rate"],
+                dropout_rate=model_cfg["dense_dropout_rate"],
+                dense_units=model_cfg["dense_units"],
+            )
+        else:
+            self.model = build_cnn_model(
+                input_shape=tuple(model_cfg["input_shape"]),
+                n_classes=model_cfg["num_classes"],
+                conv1_filters=filters[0],
+                conv2_filters=filters[1],
+                kernel_size=model_cfg["kernel_size"],
+                l2_regularizer=model_cfg["l2_regularizer"],
+                conv_dropout_rate=model_cfg["conv_dropout_rate"],
+                dropout_rate=model_cfg["dense_dropout_rate"],
+                dense_units=model_cfg["dense_units"],
+            )
         
         # Compilar
         self.model.compile(
