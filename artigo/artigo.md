@@ -154,7 +154,9 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 #### Trabalho Relacionado: Machine Learning-Based Lithological Mapping from ASTER Remote-Sensing Imagery
 
 &emsp;&emsp; Um avanço recente e relevante é o estudo de Bahrami et al. (2024), que investiga mapeamento litológico automatizado a partir de imagens ASTER por meio de uma comparação sistemática entre algoritmos de machine learning tradicionais (Random Forest, SVM, Gradient Boosting e XGBoost) e uma abordagem de deep learning (ANN) aplicada ao caso da região mineralizada de Sar-Cheshmeh (Irã). O trabalho se destaca por estruturar um pipeline comparável ao de exploração mineral baseada em sensoriamento remoto, incorporando engenharia/seleção de atributos espectrais (features derivadas de bandas e análise de correlação/importance) e avaliando quantitativamente o desempenho dos modelos via acurácia global para diferentes classes litológicas. ([MDPI][1])
+
 &emsp;&emsp; Como contribuição para este projeto, Bahrami et al. reforçam que o ASTER mantém alta utilidade para tarefas de classificação litológica e identificação indireta de minerais quando combinado com métodos supervisionados, além de evidenciar que escolhas de pré-processamento e seleção de variáveis afetam significativamente a qualidade do mapa final. ([MDPI][1])
+
 &emsp;&emsp; Entretanto, há limitações importantes quando comparamos com a proposta da Frontera Minerals. Primeiro, o estudo é orientado a classes litológicas em um contexto regional específico, não sendo desenhado diretamente para um problema de “detecção/ranking prospectivo” (ex.: presença/ausência de assinatura associada a Terras Raras em torno de ocorrências conhecidas). Segundo, o trabalho depende de um conjunto de treinamento bem definido para classes do mapeamento local, enquanto o desafio do projeto envolve generalização e rotulagem positiva/negativa por proximidade geográfica (chips ao redor de coordenadas de referência), o que tende a introduzir ruído de rótulo e exigir estratégias de validação e modelagem. Ainda assim, o artigo oferece um baseline metodológico sólido para justificar a etapa de comparação entre modelos clássicos e redes neurais usando ASTER, além de servir de referência para decisões de features e avaliação.
 
 ### Trabalho Relacionado: Redes Neurais para Prospecção de Terras Raras
@@ -170,6 +172,34 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 
   Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
 
+
+## 6. Resultados Preliminares
+
+### 6.1 Baseline Clássico (A02)
+
+&emsp;&emsp; Na etapa de modelagem clássica, três algoritmos foram avaliados como baselines supervisionados: Random Forest, SVM (kernel linear) e Regressão Logística. Os modelos foram treinados sobre vetores de 9 médias espectrais por banda (VNIR+SWIR) e avaliados no conjunto de teste com threshold otimizado via maximização do F1-Score no conjunto de validação.
+
+&emsp;&emsp; Entre os baselines, o SVM com kernel linear obteve o melhor F1-Score (0.851), seguido pela Regressão Logística (0.818) e pelo Random Forest (0.780). O SVM também apresentou o melhor recall (0.870), indicando maior capacidade de capturar depósitos reais. O Random Forest, por sua vez, obteve a maior ROC-AUC (0.930), sugerindo boa capacidade discriminativa geral, embora com menor recall no threshold otimizado.
+
+### 6.2 MLP Baseline (A03)
+
+&emsp;&emsp; O baseline neural consiste em uma rede MLP com duas camadas ocultas (32 e 16 neurônios, ativação ReLU) e camada de saída com 2 neurônios (sigmoid), treinada com sparse categorical crossentropy e otimizador Adam. A entrada são as mesmas 9 médias espectrais por banda utilizadas nos baselines clássicos, sem PCA.
+
+&emsp;&emsp; O modelo foi treinado por até 100 épocas com Early Stopping (paciência de 10 épocas, monitorando val_loss), utilizando batch size de 32 e divisão treino/validação/teste de 60%/20%/20% estratificada por imagem. O threshold de decisão foi otimizado via F1 no conjunto de validação.
+
+### 6.3 Comparação
+
+&emsp;&emsp; A comparação quantitativa entre os modelos permite avaliar se a capacidade de modelar relações não-lineares da MLP oferece ganhos sobre os baselines clássicos no contexto de prospecção mineral. As métricas detalhadas e visualizações comparativas estão disponíveis no notebook do artefato A03 (`artefatos/a03_mlp_baseline/a03_mlp_baseline.ipynb`), incluindo gráficos de barras agrupadas e análise de trade-offs entre precisão e recall para cada modelo.
+
+&emsp;&emsp; Os resultados indicam que, neste regime de poucos dados (177 amostras de treino) e representação simplificada (médias por banda), os modelos clássicos e a MLP operam em faixas de desempenho comparáveis, com diferenças que dependem da métrica priorizada. A análise completa das implicações operacionais é apresentada no notebook.
+
+## 7. Discussão e Próximos Passos
+
+&emsp;&emsp; Os resultados obtidos até o momento demonstram que tanto modelos clássicos quanto a MLP baseline conseguem discriminar, com desempenho acima do aleatório, áreas com e sem potencial prospectivo para ETR a partir de assinaturas espectrais ASTER. No entanto, a representação atual — médias por banda — descarta informação espacial e textural que pode ser diagnóstica para identificação de mineralizações, constituindo a principal limitação arquitetural desta etapa.
+
+&emsp;&emsp; O regime de poucos dados (177 amostras de treino) e a ausência de validação geográfica cruzada impõem cautela na interpretação dos resultados. Os modelos podem estar capturando correlações espúrias associadas a condições de iluminação ou contexto geológico compartilhado entre treino e teste, ao invés de padrões espectrais genuinamente associados a mineralizações de ETR.
+
+&emsp;&emsp; Para as próximas sprints, propõe-se: (i) migração para arquiteturas convolucionais (CNNs) que processem os chips 128×128×9 completos, preservando informação espacial; (ii) técnicas de data augmentation (rotação, flip, jitter espectral) para expandir o N efetivo; (iii) transfer learning a partir de datasets maiores de sensoriamento remoto; (iv) validação espacial cruzada para avaliar generalização geográfica; e (v) fusão com dados geológicos complementares para um ranqueamento prospectivo multifonte.
 
 ### Referências
 
