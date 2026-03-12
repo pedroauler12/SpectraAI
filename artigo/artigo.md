@@ -2,7 +2,7 @@
 
 ### Autores: Drielly Santana Farias, Eduardo Farias Rizk, Giovanna Fátima de Britto Vieira, Larissa Martins Pereira de Souza, Lucas Ramenzoni Jorge,  Mateus Beppler Pereira, Pedro Auler de Barros Martins
 
-## 1. Introdução (citações corrigidas)
+## 1. Introdução
 
 &emsp;&emsp; Os Elementos Terras Raras (Rare Earth Elements — REE) compõem um grupo de 17 elementos amplamente empregados em tecnologias de alto valor agregado, incluindo eletrônica, aplicações industriais avançadas e sistemas energéticos. A relevância econômica e estratégica desses elementos tem sido reiterada por órgãos oficiais e relatórios setoriais recentes, que destacam vulnerabilidades em cadeias globais de suprimento e riscos associados a alta concentração geográfica de produção e refino (UNITED STATES GEOLOGICAL SURVEY, 2025).
 
@@ -11,6 +11,29 @@
 &emsp;&emsp; Nesse contexto, o Advanced Spaceborne Thermal Emission and Reflection Radiometer (ASTER) consolidou-se como um dos sensores mais utilizados em mapeamento litológico e exploração mineral por disponibilizar bandas espectrais relevantes em VNIR e SWIR, além de histórico robusto de aplicações documentadas na literatura (ABRAMS; YAMAGUCHI, 2019; RAMSEY; FLYNN, 2020). No entanto, a interpretação manual de cenas multiespectrais permanece limitada pela alta dimensionalidade espectral, heterogeneidade espacial e pela sutileza de padrões associados a mineralizações, o que pode introduzir subjetividade e restringir a reprodutibilidade dos resultados.
 
 &emsp;&emsp; Diante disso, este trabalho apresenta uma proposta metodológica inicial para construção de um pipeline de ciência de dados geoespaciais, utilizando imagens ASTER e dados de referência fornecidos pela Frontera Minerals, com o objetivo de transformar as cenas em um conjunto supervisionado de amostras rotuladas e avaliar modelos de aprendizado de máquina e visão computacional para estimar, de forma probabilística, o potencial prospectivo em áreas de interesse. A proposta privilegia a reprodutibilidade do processamento e a geração de evidências quantitativas que possam apoiar, em ciclos posteriores, validação geológica e refinamento do método.
+
+&emsp;&emsp;Historicamente, grande parte das aplicações de aprendizado de máquina em sensoriamento remoto mineral tem sido conduzida a partir de representações tabulares dos dados espectrais, nas quais cada pixel ou amostra é descrito como um vetor de atributos derivados das bandas disponíveis. Nesse contexto, modelos clássicos e redes neurais rasas, como Multi-Layer Perceptrons (MLP), foram amplamente empregados para tarefas de classificação litológica ou identificação de assinaturas minerais, sobretudo por sua capacidade de modelar relações não lineares entre variáveis espectrais. Entretanto, essa abordagem apresenta uma limitação importante: ao tratar cada amostra como um vetor independente, a estrutura espacial presente nas imagens multiespectrais é, em grande parte, descartada. Em problemas geológicos, essa informação espacial pode ser relevante, uma vez que processos de alteração mineral, zonas de contato litológico e padrões geomorfológicos tendem a se manifestar como estruturas contínuas ou texturas distribuídas no espaço.
+
+&emsp;&emsp;Diante dessa limitação, abordagens baseadas em visão computacional têm sido cada vez mais exploradas em dados de sensoriamento remoto. Em particular, redes neurais convolucionais (Convolutional Neural Networks — CNN) permitem aprender automaticamente padrões espaciais e espectrais a partir de janelas de imagem, preservando relações de vizinhança entre pixels e capturando estruturas que dificilmente seriam representadas por atributos tabulares isolados. No contexto de prospecção mineral, essa capacidade pode contribuir para identificar padrões sutis associados a zonas de alteração ou assinaturas espectrais distribuídas espacialmente, potencialmente ampliando a capacidade de generalização dos modelos.
+
+&emsp;&emsp;Assim, além da avaliação inicial de modelos supervisionados clássicos como baseline, este trabalho também considera a perspectiva de evolução metodológica para abordagens baseadas em visão computacional. A hipótese central é que a incorporação de informação espacial por meio de representações em forma de chips multiespectrais possa permitir a extração automática de características relevantes, fornecendo uma base mais adequada para modelagem preditiva em tarefas de mapeamento prospectivo de elementos de terras raras.
+
+#### 1.1 Objetivos da Pesquisa
+##### Objetivo Geral
+
+&emsp;&emsp;Desenvolver e avaliar um modelo de Deep Learning aplicado à visão computacional capaz de analisar imagens multiespectrais do sensor ASTER e estimar, de forma probabilística, o potencial de ocorrência de elementos de Terras Raras (REE), produzindo um ranking de prospectividade mineral que auxilie a priorização de áreas para campanhas de pesquisa geológica.
+
+##### Objetivos Específicos
+
+A partir desse objetivo geral, delineiam-se os seguintes objetivos específicos:
+
+Realizar engenharia de atributos espectrais, investigando transformações e combinações de bandas do ASTER capazes de destacar assinaturas espectrais relacionadas a minerais de alteração hidrotermal (argilas, óxidos e carbonatos), frequentemente associados a sistemas mineralizados.
+
+Desenvolver e treinar modelos CNN, com foco em arquiteturas de visão computacional capazes de extrair padrões espaciais e espectrais presentes nas imagens multiespectrais.
+
+Avaliar o desempenho dos modelos treinados utilizando áreas com ocorrências conhecidas de Terras Raras, por meio das métricas f1-score e AUC-ROC.
+
+Produzir um ranking de áreas com maior potencial prospectivo, permitindo priorizar regiões para futuras etapas de pesquisa mineral e campanhas de campo.
 
 ## 2. Fundamentação Teórica
 
@@ -36,65 +59,86 @@
 
 ### 3.2 Métodos
 
-
 #### 3.2.1. Aquisição de Dados e Alvos Geológicos
 
-A base de dados do projeto é composta por amostras de solo e rocha coletadas in situ pela **Frontera Minerals**, contendo teores geoquímicos de Elementos de Terras Raras (ETR). As amostras foram rotuladas binariamente:
+A base de dados do projeto é composta por amostras de solo e rocha coletadas *in situ* pela **Frontera Minerals**, contendo teores geoquímicos de Elementos de Terras Raras (ETR). As amostras foram rotuladas binariamente:
 
 * **Classe Positiva (y = 1):** Áreas com teores acima do *cut-off* econômico, associadas a depósitos iônicos ou rochas alcalinas mineralizadas.
-* **Classe Negativa (y = 0):** Áreas estéreis ou com teores de base (background).
+* **Classe Negativa (y = 0):** Áreas estéreis ou com teores de base (*background*).
 
-As assinaturas espectrais foram extraídas de imagens do sensor **ASTER (Advanced Spaceborne Thermal Emission and Reflection Radiometer)**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR), com resolução espacial reamostrada para compatibilidade.
+As assinaturas espectrais foram extraídas de imagens do sensor **ASTER**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR). Devido à degradação do sensor SWIR após 2008, o pipeline prioriza cenas históricas (2000-2007) com cobertura de nuvens inferior a 20% (conforme documentado no protocolo de acesso ASTER), garantindo a integridade dos dados para mapeamento de argilas.
 
 #### 3.2.2. Pré-processamento e Engenharia de Atributos
 
-Para mitigar ruídos e isolar a resposta mineralógica, o pipeline de dados executou:
+Para mitigar ruídos e isolar a resposta mineralógica, o pipeline executou:
 
 1. **Filtragem de Máscaras:** Remoção de pixels contaminados por nuvens e densa cobertura vegetal (NDVI > limiar).
-2. **Cálculo de Índices Minerais:** Foram geradas *features* baseadas em razões de bandas consagradas na literatura de sensoriamento remoto mineral, como o **Índice de Argilas** $[B06 / (B05 + B04)]$, visando destacar produtos de alteração hidrotermal e intemperismo.
-3. **Vetorização:** Cada amostra foi convertida em um vetor de alta dimensionalidade ($p = 147.456$), representando tanto as bandas brutas quanto as janelas espaciais adjacentes.
+2. **Reprojeção:** Conversão sistemática de coordenadas para WGS84, corrigindo discrepâncias entre os dados de campo (SAD69) e os produtos orbitais.
+3. **Cálculo de Índices Minerais:** Geração de *features* baseadas em razões de bandas como o **Índice de Argilas** $[B06 / (B05 + B04)]$.
+4. **Vetorização (Abordagem Tabular):** Para a fase inicial de baselines, cada amostra foi convertida em um vetor de alta dimensionalidade ($p = 147.456$), representando bandas brutas e janelas adjacentes.
+
+#### 3.2.3. Geração de Amostras (Chips) e Rotulagem
+
+O dataset é construído a partir de **chips** gerados ao redor de pontos georreferenciados. Cada chip é um GeoTIFF multibanda com bandas VNIR+SWIR alinhadas.
+
+* **Extração:** O recorte utiliza uma *bounding box* (bbox) com **jitter controlado por semente**, garantindo que o ponto de referência permaneça dentro do chip, mas em posições variadas para aumentar a robustez.
+* **Processamento Tabular:** Para os modelos iniciais, os chips são convertidos em vetores (`pixel_*`) e metadados. A rotulagem é aplicada via mapeamento de `image_id` para as listas de positivos/negativos fornecidas no arquivo `extracted_codes.json`.
+
+#### 3.2.4. Modelagem de Referência (Baselines)
+
+Estabeleceu-se o desempenho de referência através de:
+
+1. **Algoritmos Clássicos:** SVM (kernel linear), Random Forest e Regressão Logística, otimizados via `GridSearchCV`.
+2. **Multi-Layer Perceptron (MLP):** Uma rede neural densa utilizada para testar a capacidade de aprendizado não linear sobre os dados vetorizados, servindo como o baseline de Deep Learning.
+
+#### 3.2.5. Evolução para Visão Computacional (CNN)
+
+Visando superar a limitação estrutural da MLP, que ignora a vizinhança espacial, o projeto evoluiu para o uso de **Redes Neurais Convolucionais (CNN)**:
+
+* **Tensores Espaciais:** Em vez de vetorizar os pixels, a CNN recebe o chip em sua forma original (Altura x Largura x Canais), permitindo que filtros convolucionais identifiquem texturas e padrões morfológicos do solo.
+* **Data Augmentation:** Implementação de rotações e espelhamentos para simular diferentes orientações geológicas e prevenir o *overfitting*.
+
+#### 3.2.6. Protocolo de Divisão de Dados e Anti-Leakage
+
+O controle de **vazamento de dados (spatial leakage)** é rigoroso. A divisão em treino (60%), validação (20%) e teste (20%) é feita no nível de **cena (image_id)**. Amostras da mesma imagem permanecem no mesmo grupo, utilizando **StratifiedGroupKFold** para manter a proporção de classes em todos os folds e impedir que o modelo memorize condições específicas de uma única captura.
+
+#### 3.2.7. Protocolo de Avaliação e Produto Final
+
+O limiar de decisão ($\tau$) não é fixado em 0.5, sendo otimizado no conjunto de validação para maximizar o **F1-Score** na curva Precision-Recall. As métricas finais incluem Acurácia, Precisão, Recall, F1-score, Balanced Accuracy, ROC-AUC e PR-AUC. O produto final é um mecanismo reprodutível que permite ordenar áreas por probabilidade estimada, servindo como base para a expansão da prospecção mineral da **Frontera Minerals**.
 
 
-#### 3.2.3 Geração de amostras (chips) e rotulagem supervisionada
+#### 3.2.8 Arquitetura da CNN e Hiperparâmetros
 
-&emsp;&emsp; O dataset supervisionado é construído a partir de chips gerados ao redor de pontos georreferenciados. Cada chip é um GeoTIFF multibanda com bandas VNIR+SWIR empilhadas e alinhadas espacialmente. O recorte usa bbox com jitter controlado por semente, garantindo que o ponto de referência permaneça dentro do chip.
+&emsp;&emsp; Para a etapa de visão computacional foi implementada uma Rede Neural Convolucional (CNN) simples, projetada como arquitetura inicial de experimentação sobre os chips multiespectrais ASTER. A rede recebe como entrada tensores correspondentes aos chips extraídos das cenas, preservando a estrutura espacial e espectral das imagens.
 
-&emsp;&emsp; Em seguida, os chips são convertidos para um dataset tabular, no qual cada amostra é representada por um vetor de pixels (`pixel_*`) e metadados (path, dimensões, CRS etc.). A rotulagem é aplicada por mapeamento de `image_id` para listas de positivos e negativos fornecidas no `extracted_codes.json`.
+&emsp;&emsp; A arquitetura segue uma configuração sequencial composta por blocos convolucionais e camadas densas. Cada bloco convolucional é formado por uma camada Conv2D, seguida de função de ativação ReLU e camada de max pooling, responsável pela redução progressiva da dimensionalidade espacial e pela extração de padrões locais relevantes. Após os blocos convolucionais, o tensor resultante é achatado (flatten) e processado por camadas densas responsáveis pela etapa de classificação binária (presença ou ausência de assinatura associada a áreas prospectivas).
 
-#### 3.2.3. Protocolo de Divisão de Dados (Anti-Leakage)
+&emsp;&emsp; A camada final utiliza função de ativação sigmoid, produzindo uma probabilidade associada à classe positiva. Esse valor é posteriormente utilizado no ranqueamento de áreas prospectivas.
 
-Um ponto crítico da metodologia é o controle de **vazamento de dados (spatial leakage)**. A divisão do dataset em treino (60%), validação (20%) e teste (20%) foi realizada no nível de cena (**image_id**).
+&emsp;&emsp; Os principais hiperparâmetros utilizados no treinamento da CNN são apresentados na Tabela 1.
 
-* Amostras pertencentes à mesma imagem de satélite foram mantidas obrigatoriamente no mesmo grupo.
-* Utilizou-se o método **StratifiedGroupKFold** para garantir que a proporção de classes fosse mantida em todos os *folds*, impedindo que o modelo memorizasse condições de iluminação ou sensores específicos de uma única imagem.
+Tabela 1 – Hiperparâmetros utilizados no treinamento da CNN
 
+| Hiperparâmetro     | Valor                                    |
+| ------------------ | ---------------------------------------- |
+| Learning Rate      | 0.001                                    |
+| Batch Size         | 32                                       |
+| Número de Epochs   | 50                                       |
+| Otimizador         | Adam                                     |
+| Função de perda    | Binary Cross-Entropy                     |
+| Função de ativação | ReLU (camadas internas), Sigmoid (saída) |
 
-#### 3.2.4. Modelagem Clássica (Baseline)
+Esses valores foram definidos inicialmente com base em práticas comuns em tarefas de classificação de imagens e serão refinados em experimentos futuros por meio de estratégias de ajuste de hiperparâmetros.
 
-Foram avaliados três algoritmos de aprendizado supervisionado para estabelecer o desempenho de referência:
+#### 3.2.9 Protocolo Experimental
 
-1. **Support Vector Machine (SVM):** Implementada com kernel linear e regularização , visando a maximização da margem em espaço de alta dimensionalidade.
-2. **Random Forest (RF):** Conjunto de árvores de decisão para capturar interações não lineares entre as bandas espectrais.
-3. **Regressão Logística:** Baseline linear para verificação de separabilidade simples e calibração probabilística.
+&emsp;&emsp;O protocolo experimental foi estruturado para avaliar a capacidade dos modelos em identificar padrões associados à presença de elementos de terras raras a partir de dados multiespectrais ASTER. O conjunto de dados foi dividido em três subconjuntos: treinamento (60%), validação (20%) e teste (20%), respeitando o agrupamento por image_id para evitar vazamento de informação entre conjuntos.
 
-A otimização de hiperparâmetros foi realizada via **GridSearchCV**, utilizando o conjunto de validação para a escolha final dos modelos.
+&emsp;&emsp;Durante o treinamento da CNN, o conjunto de validação foi utilizado para monitorar o desempenho do modelo e auxiliar na seleção do limiar de decisão e de configurações de treinamento. Ao final do processo, o modelo com melhor desempenho no conjunto de validação foi aplicado ao conjunto de teste, que permaneceu isolado durante todo o processo de desenvolvimento.
 
-#### 3.2.5. Protocolo de Avaliação e Calibração de Limiar
+&emsp;&emsp;A avaliação de desempenho considera métricas para capturar diferentes aspectos da qualidade da classificação, incluindo F1-score e ROC-AUC . Essas métricas permitem analisar tanto a capacidade geral de classificação quanto o comportamento do modelo em cenários com possível desbalanceamento entre classes.
 
-Dada a natureza exploratória do problema, o limiar de decisão ($\tau$) não foi fixado em 0.5. Em vez disso:
-
-1. O modelo gerou scores contínuos.
-2. O limiar ótimo foi selecionado no conjunto de validação através da maximização do **F1-Score** na curva Precision-Recall.
-3. As métricas finais (F1, Precision, Recall, ROC-AUC e PR-AUC) foram calculadas exclusivamente no conjunto de teste isolado.
-
-$$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
-
-#### 3.2.6 Critérios de avaliação e produto final esperado
-
-&emsp;&emsp; A avaliação considera métricas de classificação binária: acurácia, precisão, revocação (recall), F1-score, balanced accuracy, ROC-AUC e PR-AUC, além de matriz de confusão e análise de erros. O resultado pode ser interpretado como escore prospectivo por amostra/região, permitindo ordenar áreas por probabilidade estimada de classe positiva.
-
-&emsp;&emsp; O produto esperado nesta etapa é um mecanismo reprodutível de geração de chips, montagem de dataset e inferência supervisionada, servindo como base para refinamentos metodológicos e expansão para modelos de visão computacional nas próximas sprints.
-
+&emsp;&emsp;Para garantir a reprodutibilidade computacional do pipeline, todas as etapas de processamento, geração de chips, engenharia de atributos e treinamento dos modelos foram implementadas em ambiente Python utilizando bibliotecas amplamente adotadas em ciência de dados geoespaciais e aprendizado de máquina.As etapas de modelagem supervisionada e avaliação utilizaram scikit-learn e TensorFlow/Keras. O pipeline foi estruturado de forma modular, permitindo a repetição sistemática dos experimentos a partir de parâmetros controlados, incluindo sementes aleatórias fixas para geração de amostras e divisão de dados. Essa abordagem garante consistência entre execuções e facilita a replicação dos resultados em estudos futuros ou em novas áreas de interesse geológico.
 ## 4. Trabalhos Relacionados
 
 #### Trabalho Relacionado 1: Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration
@@ -110,7 +154,9 @@ $$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
 #### Trabalho Relacionado: Machine Learning-Based Lithological Mapping from ASTER Remote-Sensing Imagery
 
 &emsp;&emsp; Um avanço recente e relevante é o estudo de Bahrami et al. (2024), que investiga mapeamento litológico automatizado a partir de imagens ASTER por meio de uma comparação sistemática entre algoritmos de machine learning tradicionais (Random Forest, SVM, Gradient Boosting e XGBoost) e uma abordagem de deep learning (ANN) aplicada ao caso da região mineralizada de Sar-Cheshmeh (Irã). O trabalho se destaca por estruturar um pipeline comparável ao de exploração mineral baseada em sensoriamento remoto, incorporando engenharia/seleção de atributos espectrais (features derivadas de bandas e análise de correlação/importance) e avaliando quantitativamente o desempenho dos modelos via acurácia global para diferentes classes litológicas. ([MDPI][1])
+
 &emsp;&emsp; Como contribuição para este projeto, Bahrami et al. reforçam que o ASTER mantém alta utilidade para tarefas de classificação litológica e identificação indireta de minerais quando combinado com métodos supervisionados, além de evidenciar que escolhas de pré-processamento e seleção de variáveis afetam significativamente a qualidade do mapa final. ([MDPI][1])
+
 &emsp;&emsp; Entretanto, há limitações importantes quando comparamos com a proposta da Frontera Minerals. Primeiro, o estudo é orientado a classes litológicas em um contexto regional específico, não sendo desenhado diretamente para um problema de “detecção/ranking prospectivo” (ex.: presença/ausência de assinatura associada a Terras Raras em torno de ocorrências conhecidas). Segundo, o trabalho depende de um conjunto de treinamento bem definido para classes do mapeamento local, enquanto o desafio do projeto envolve generalização e rotulagem positiva/negativa por proximidade geográfica (chips ao redor de coordenadas de referência), o que tende a introduzir ruído de rótulo e exigir estratégias de validação e modelagem. Ainda assim, o artigo oferece um baseline metodológico sólido para justificar a etapa de comparação entre modelos clássicos e redes neurais usando ASTER, além de servir de referência para decisões de features e avaliação.
 
 ### Trabalho Relacionado: Redes Neurais para Prospecção de Terras Raras
@@ -126,6 +172,34 @@ $$F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
 
   Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
 
+
+## 6. Resultados Preliminares
+
+### 6.1 Baseline Clássico (A02)
+
+&emsp;&emsp; Na etapa de modelagem clássica, três algoritmos foram avaliados como baselines supervisionados: Random Forest, SVM (kernel linear) e Regressão Logística. Os modelos foram treinados sobre vetores de 9 médias espectrais por banda (VNIR+SWIR) e avaliados no conjunto de teste com threshold otimizado via maximização do F1-Score no conjunto de validação.
+
+&emsp;&emsp; Entre os baselines, o SVM com kernel linear obteve o melhor F1-Score (0.851), seguido pela Regressão Logística (0.818) e pelo Random Forest (0.780). O SVM também apresentou o melhor recall (0.870), indicando maior capacidade de capturar depósitos reais. O Random Forest, por sua vez, obteve a maior ROC-AUC (0.930), sugerindo boa capacidade discriminativa geral, embora com menor recall no threshold otimizado.
+
+### 6.2 MLP Baseline (A03)
+
+&emsp;&emsp; O baseline neural consiste em uma rede MLP com duas camadas ocultas (32 e 16 neurônios, ativação ReLU) e camada de saída com 2 neurônios (sigmoid), treinada com sparse categorical crossentropy e otimizador Adam. A entrada são as mesmas 9 médias espectrais por banda utilizadas nos baselines clássicos, sem PCA.
+
+&emsp;&emsp; O modelo foi treinado por até 100 épocas com Early Stopping (paciência de 10 épocas, monitorando val_loss), utilizando batch size de 32 e divisão treino/validação/teste de 60%/20%/20% estratificada por imagem. O threshold de decisão foi otimizado via F1 no conjunto de validação.
+
+### 6.3 Comparação
+
+&emsp;&emsp; A comparação quantitativa entre os modelos permite avaliar se a capacidade de modelar relações não-lineares da MLP oferece ganhos sobre os baselines clássicos no contexto de prospecção mineral. As métricas detalhadas e visualizações comparativas estão disponíveis no notebook do artefato A03 (`artefatos/a03_mlp_baseline/a03_mlp_baseline.ipynb`), incluindo gráficos de barras agrupadas e análise de trade-offs entre precisão e recall para cada modelo.
+
+&emsp;&emsp; Os resultados indicam que, neste regime de poucos dados (177 amostras de treino) e representação simplificada (médias por banda), os modelos clássicos e a MLP operam em faixas de desempenho comparáveis, com diferenças que dependem da métrica priorizada. A análise completa das implicações operacionais é apresentada no notebook.
+
+## 7. Discussão e Próximos Passos
+
+&emsp;&emsp; Os resultados obtidos até o momento demonstram que tanto modelos clássicos quanto a MLP baseline conseguem discriminar, com desempenho acima do aleatório, áreas com e sem potencial prospectivo para ETR a partir de assinaturas espectrais ASTER. No entanto, a representação atual — médias por banda — descarta informação espacial e textural que pode ser diagnóstica para identificação de mineralizações, constituindo a principal limitação arquitetural desta etapa.
+
+&emsp;&emsp; O regime de poucos dados (177 amostras de treino) e a ausência de validação geográfica cruzada impõem cautela na interpretação dos resultados. Os modelos podem estar capturando correlações espúrias associadas a condições de iluminação ou contexto geológico compartilhado entre treino e teste, ao invés de padrões espectrais genuinamente associados a mineralizações de ETR.
+
+&emsp;&emsp; Para as próximas sprints, propõe-se: (i) migração para arquiteturas convolucionais (CNNs) que processem os chips 128×128×9 completos, preservando informação espacial; (ii) técnicas de data augmentation (rotação, flip, jitter espectral) para expandir o N efetivo; (iii) transfer learning a partir de datasets maiores de sensoriamento remoto; (iv) validação espacial cruzada para avaliar generalização geográfica; e (v) fusão com dados geológicos complementares para um ranqueamento prospectivo multifonte.
 
 ### Referências
 
