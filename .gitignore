@@ -18,3 +18,4 @@ venv/
 !outputs/trained_models/experiments_log.csv
 .venv/
 .claude/
+*.h5
