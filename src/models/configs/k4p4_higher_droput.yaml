@@ -1,0 +1,39 @@
+# k4p4_higher_dropout.yaml
+# Fusão: arquitetura k4p4 (model_architechture) + regularização aumentada (higher_dropout)
+# Objetivo: testar se maior dropout + LR menor reduz overfitting mantendo k4p4
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+
+  # Arquitetura (mantida do model_architechture - nosso melhor setup)
+  filters: [32, 64]
+  kernel_size: 4        # melhor kernel encontrado
+  pool_size: 4          # melhor pool encontrado
+
+  # Regularização (importada do higher_dropout)
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.3      # aumentado de 0.2
+  dense_dropout_rate: 0.6     # aumentado de 0.5
+
+  # Camadas densas
+  dense_units: 128
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.0005       # reduzido de 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true
