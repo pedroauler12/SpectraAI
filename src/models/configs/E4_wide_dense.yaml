@@ -1,0 +1,35 @@
+# E4 — Dense mais largo + mais filtros + batch menor
+# Maior capacidade na camada densa e batch menor para gradientes mais estaveis
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+
+  filters: [64, 128]          # Mais filtros
+  kernel_size: 3
+  pool_size: 2
+
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.25
+  dense_dropout_rate: 0.5
+
+  dense_units: 256             # Dobrado de 128
+
+training:
+  batch_size: 16               # Menor batch size
+  epochs: 50
+  learning_rate: 0.0008
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: outputs/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: false
+  save_history: false
