@@ -174,6 +174,19 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 
 &emsp;&emsp;**Análise Crítica:** O framework DEEP-SEAM v1.0 (Luo et al., 2025) foca em dados multifonte complexos. O SpectraAI diferencia-se por buscar uma solução otimizada especificamente para o sensor ASTER em áreas de solo exposto, criando um especialista de domínio em imagens orbitais antes de escalar para a fusão de dados.
 
+### Trabalho Relacionado: Classificação de Uso e Cobertura do Solo via CNNs e Visão Computacional
+
+&emsp;&emsp;A transição do processamento puramente espectral para a análise contextual-espacial é amplamente validada no estado da arte da classificação de uso e cobertura do solo (LULC - Land Use and Land Cover). O estudo de Tong et al. (2020), intitulado "Land-cover classification with high-resolution remote sensing images using transferable deep models", estabeleceu um marco ao demonstrar que Redes Neurais Convencionais (CNNs) superam algoritmos clássicos (como SVM e Random Forest) ao capturar não apenas a reflectância individual do pixel, mas a dependência espacial entre vizinhos. Utilizando arquiteturas profundas, os autores provaram que a extração automática de feições espaciais reduz drasticamente o ruído de classificação (efeito "sal e pimenta", onde aparecem pixels com valores alternadamente modificados para 0 (pimenta) e para o valor máximo da imagem (sal)) comum em métodos tradicionais de sensoriamento remoto.
+
+&emsp;&emsp;Ao comparar o trabalho de Tong et al. com a proposta do SpectraAI, identificam-se pontos de convergência e distinções fundamentais:
+
+&emsp;&emsp;Enquanto o estudo de SOTA foca em feições macroscópicas e antropogênicas (padrões urbanos, texturas de plantações e corpos d'água), o SpectraAI busca padrões mineralógicos sutis e sub-pixel. No entanto, a lógica de "análise por vizinhança" (patches/chips) validada por Tong é o que justifica a evolução do nosso pipeline de modelos MLP/SVM para CNNs.
+
+&emsp;&emsp;A superioridade das CNNs na LULC reside na capacidade de aprender "texturas". Para a prospecção de Terras Raras, isso sugere que o modelo não deve olhar apenas para a cor do pixel, mas para o gradiente espectral da zona de alteração hidrotermal em que o mineral se formou e hoje está inserido.
+
+&emsp;&emsp;Dessa forma, a literatura de uso do solo fornece a base teórica para o uso de chips multiespectrais no SpectraAI: se a visão computacional consegue distinguir texturas complexas de solo e vegetação, ela possui o potencial necessário para identificar as assinaturas espaciais discretas de depósitos de ETR que modelos baseados apenas em tabelas de pixels tendem a ignorar.
+
+
 ## 5. Proposta Metodológica Preliminar
 
   Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
@@ -226,3 +239,5 @@ Esses valores foram definidos inicialmente com base em práticas comuns em taref
 **SUN, K.** et al. A Review of Mineral Prospectivity Mapping Using Deep Learning. *Minerals*, v. 14, n. 10, 1021, 2024. DOI: 10.3390/min14101021. Disponível em: [https://www.mdpi.com/2075-163X/14/10/1021](https://www.mdpi.com/2075-163X/14/10/1021). Acesso em: 26 fev. 2026.
 
 **UNITED STATES GEOLOGICAL SURVEY (USGS).** Interior Department releases final 2025 List of Critical Minerals. *U.S. Geological Survey*, 14 nov. 2025. Disponível em: [https://www.usgs.gov/news/science-snippet/interior-department-releases-final-2025-list-critical-minerals](https://www.usgs.gov/news/science-snippet/interior-department-releases-final-2025-list-critical-minerals). Acesso em: 26 fev. 2026.
+
+**TONG, X.** et al. Land-cover classification with high-resolution remote sensing images using transferable deep models. *Remote Sensing of Environment*, v. 237, 111322, 2020. DOI: 10.1016/j.rse.2019.111322. Disponível em: [https://doi.org/10.1016/j.rse.2019.111322](https://doi.org/10.1016/j.rse.2019.111322). Acesso em: 06 mar. 2026.
