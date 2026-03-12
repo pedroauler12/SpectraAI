@@ -9,9 +9,9 @@ model:
 ##----- Mudança na arquitetura do modelo -----##
   # Camadas convolucionais
 
-  filters: [32, 64] ##numero de filtros para cada camada convolucional
+  filters: [32, 64, 128] ##numero de filtros para cada camada convolucional
   kernel_size: 4 #3 é o original 
-  pool_size: 4
+  pool_size: 4  #2 e o original
   
 ##--------##
 
