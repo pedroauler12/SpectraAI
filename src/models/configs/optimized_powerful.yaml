@@ -1,0 +1,34 @@
+# Combinação Otimizada 3: Potente & Expressiva (máximo desempenho)
+# Objetivo: Máxima capacidade de representação
+# Combinação: Filtros grandes + arquitetura profunda + menos regularização
+# Hipótese: Com dados suficientes, modelo com alta capacidade supera baseline
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  filters: [64, 128]           # Grande (capacidade)
+  kernel_size: 5               # Maior receptive field
+  pool_size: 2
+  l2_regularizer: 0.0001       # Fraco (permite flexibilidade)
+  conv_dropout_rate: 0.15      # Leve
+  dense_dropout_rate: 0.4      # Moderado
+  dense_units: 256             # Grande
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true

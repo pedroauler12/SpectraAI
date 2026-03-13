@@ -1,0 +1,34 @@
+# Combinação Otimizada 1: Esparça & Rápida (para deploy)
+# Objetivo: Modelo pequeno, rápido e eficiente
+# Combinação: Filtros reduzidos + menos dropout + batch pequeno + dense pequeno
+# Hipótese: Equilibra eficiência (menos parâmetros, mais rápido) com regularização
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  filters: [16, 32]            # Reduzido (eficiência)
+  kernel_size: 3
+  pool_size: 2
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.1       # Leve
+  dense_dropout_rate: 0.3      # Leve
+  dense_units: 64              # Pequeno
+
+training:
+  batch_size: 16               # Pequeno (já que modelo é pequeno)
+  epochs: 50
+  learning_rate: 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true

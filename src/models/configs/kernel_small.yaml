@@ -1,0 +1,33 @@
+# Arquitetura (Model) - Kernel Muito Pequeno (1x1)
+# Objetivo: Testar se kernels 1x1 (pointwise convolutions) funcionam para features globais
+# Hipótese: 1x1 kernels capturam apenas relações pixel-a-pixel sem contexto espacial
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  filters: [32, 64]
+  kernel_size: 1               # MUITO PEQUENO - sem contexto espacial
+  pool_size: 2
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.2
+  dense_dropout_rate: 0.5
+  dense_units: 128
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true
