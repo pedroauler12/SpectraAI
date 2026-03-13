@@ -15,6 +15,12 @@ env/
 venv/
 .env
 *.csv
+!outputs/trained_models/experiments_log.csv
 .venv/
-
-*.csv
+.claude/
+.venv/
+__pycache__/
+outputs/trained_models/
+*.keras
+data/
+*.h5

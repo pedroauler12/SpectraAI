@@ -1,0 +1,18 @@
+{
+  "dataset_path": "/home/inteli/Documentos/3ANO/PROJETO/g01/data/pixels_dataset.csv",
+  "codes_path": "/home/inteli/Documentos/3ANO/PROJETO/g01/data/extracted_codes.json",
+  "use_sample": true,
+  "sample_size": 1500,
+  "data_format": "channels_last",
+  "normalization": "zscore",
+  "n_channels": 9,
+  "height": 128,
+  "width": 128,
+  "n_train": 206,
+  "n_val": 44,
+  "n_test": 45,
+  "train_class_balance": {
+    "0": 125,
+    "1": 81
+  }
+}

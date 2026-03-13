@@ -1,0 +1,39 @@
+# Pilar: Arquitetura (Model) - Variação de Filtros
+# Objetivo científico: Descobrir se o modelo precisa de mais "visão" (filtros) para capturar os padrões das Terras Raras.
+# Hipótese: Aumentar filtros vai melhorar a capacidade de extrair features sem sobrecarregar o treinamento.
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  
+  # VARIAÇÃO: filtros aumentados progressivamente
+  filters: [64, 128]           # Aumentado de [32, 64] - MAIS "VISÃO"
+  kernel_size: 3               # Mantém padrão
+  pool_size: 2
+  
+  # Regularization (igual ao baseline para isolar efeito de filtros)
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.2
+  dense_dropout_rate: 0.5
+  
+  # Dense layers (igual ao baseline)
+  dense_units: 128
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true
