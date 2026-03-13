@@ -44,7 +44,13 @@ Para garantir comparação justa, as seguintes variáveis foram mantidas fixas e
 - Tamanho do conjunto de validação: mantido constante entre runs do mesmo dia
 - Pré-processamento de imagem: mesma pipeline de normalização para todos os experimentos
 
-### 1.4 Variáveis experimentais (o que foi alterado)
+### 1.4 Pipeline de experimentação
+
+O pipeline segue uma estrutura reprodutível e comparável entre runs. Primeiro, os dados ASTER previamente preparados são carregados, filtrados e normalizados com a mesma estratégia para todas as configurações. Em seguida, o modelo CNN é construído dinamicamente a partir de arquivos YAML, o que permite variar arquitetura e hiperparâmetros sem alterar a lógica base do código.
+
+Cada configuração é treinada em um split fixo de treino e validação, gerando histórico de treinamento, modelo salvo e métricas finais. Ao término de cada run, os resultados são registrados em `experiments_log.csv`, incluindo accuracy, F1, sensitivity, specificity, balanced accuracy, AUC-ROC, PR-AUC e matriz de confusão. Esses logs consolidados são então usados para comparar configurações, analisar trade-offs, avaliar risco de overfitting e sustentar a escolha da melhor configuração.
+
+### 1.5 Variáveis experimentais (o que foi alterado)
 
 Cada configuração variou **apenas uma dimensão por vez** em relação ao baseline, seguindo o princípio de controle experimental:
 
@@ -61,7 +67,7 @@ Cada configuração variou **apenas uma dimensão por vez** em relação ao base
 | `optimized_sparse` | Combinação de múltiplas reduções de capacidade |
 | Ablações (ver Seção 4) | Remoção de componentes específicos do pipeline |
 
-### 1.5 Critério de comparação
+### 1.6 Critério de comparação
 
 Uma configuração foi considerada **superior** ao baseline quando apresentou:
 - F1 ≥ baseline em pelo menos 50% das runs, **e**
@@ -98,12 +104,9 @@ Ao longo do período experimental, foram executadas aproximadamente 90 runs dist
 
 O gráfico abaixo apresenta a acurácia média de validação para cada configuração. As barras refletem a média de todas as runs válidas de cada config.
 
-<!-- GRÁFICO 1: Barras de val_accuracy média por configuração -->
-<!-- Salvar print como: ./img/grafico_01_val_acc.png -->
-
 &nbsp;
 
-![Gráfico 1 — Acurácia de validação por configuração](./img/grafico_01_val_acc.png)
+![Gráfico 1 — Acurácia de validação por configuração](./assets/grafico_01_val_acc.png)
 
 *Figura 1 — Acurácia média de validação por configuração (runs de 11–12/03/2026). `higher_dropout`, `filters_small`, `kernel_small` e `dense_small` atingem a maior média (~85,4%). `optimized_sparse` apresenta a pior performance (~80,5%).*
 
@@ -123,12 +126,9 @@ Em todos os experimentos válidos, o modelo convergiu dentro das 50 épocas esta
 
 O gráfico radar abaixo compara `baseline`, `higher_dropout` e `model_architechture` simultaneamente em seis métricas. Os valores foram normalizados dentro do intervalo observado para permitir comparação visual direta.
 
-<!-- GRÁFICO 2: Radar com 6 métricas para as 3 configs principais -->
-<!-- Salvar print como: ./img/grafico_02_radar.png -->
-
 &nbsp;
 
-![Gráfico 2 — Radar multidimensional](./img/grafico_02_radar.png)
+![Gráfico 2 — Radar multidimensional](./assets/grafico_02_radar.png)
 
 *Figura 2 — Perfil multidimensional das três configurações principais. `higher_dropout` (verde) apresenta o melhor equilíbrio geral. `model_architechture` (laranja) destaca-se em especificidade, mas sacrifica sensibilidade. PR-AUC é o ponto fraco de todas as configs.*
 
@@ -142,12 +142,9 @@ O PR-AUC baixo (~0,35–0,40 em média para todas as configs) é o resultado mai
 
 O scatter abaixo plota cada run individualmente no espaço AUC-ROC × Acurácia. A posição ideal é o canto superior direito (AUC alto + acurácia alta).
 
-<!-- GRÁFICO 3: Scatter AUC-ROC × Val Accuracy, cada ponto = uma run, colorido por config -->
-<!-- Salvar print como: ./img/grafico_03_scatter_auc_acc.png -->
-
 &nbsp;
 
-![Gráfico 3 — Scatter AUC-ROC × Acurácia](./img/grafico_03_scatter_auc_acc.png)
+![Gráfico 3 — Scatter AUC-ROC × Acurácia](./assets/grafico_03_scatter_auc_acc.png)
 
 *Figura 3 — Cada ponto representa uma run individual. As ablações concentram-se em AUC alto (0,85–0,92) com acurácia moderada. Baseline e model_arch espalham-se amplamente no eixo X, evidenciando instabilidade probabilística.*
 
@@ -159,12 +156,9 @@ O scatter revela uma bifurcação estrutural importante: configurações menores
 
 O gráfico abaixo plota o posicionamento de cada run no espaço sensibilidade × especificidade. Ambas as métricas devem ser maximizadas — o ponto ideal fica no canto superior direito.
 
-<!-- GRÁFICO 4: Scatter sensibilidade × especificidade, colorido por config, triângulo no outlier -->
-<!-- Salvar print como: ./img/grafico_04_tradeoff_sens_spec.png -->
-
 &nbsp;
 
-![Gráfico 4 — Trade-off Sensibilidade × Especificidade](./img/grafico_04_tradeoff_sens_spec.png)
+![Gráfico 4 — Trade-off Sensibilidade × Especificidade](./assets/grafico_04_tradeoff_sens_spec.png)
 
 *Figura 4 — O triângulo vermelho (outlier de `model_arch`) representa uma run com especificidade de 97% e sensibilidade de apenas 19% — colapso de predição. O cluster saudável concentra-se em 85–95% de sensibilidade e 82–87% de especificidade.*
 
@@ -209,12 +203,9 @@ Os resultados médios das ablações em comparação com o baseline são apresen
 
 ### 4.4 Síntese das ablações
 
-<!-- GRÁFICO 5: Barras agrupadas comparando baseline vs 3 ablações em Val Acc, F1 e Sensibilidade -->
-<!-- Salvar print como: ./img/grafico_05_ablacoes.png -->
-
 &nbsp;
 
-![Gráfico 5 — Comparação das ablações](./img/grafico_05_ablacoes.png)
+![Gráfico 5 — Comparação das ablações](./assets/grafico_05_ablacoes.png)
 
 *Figura 5 — Comparação direta entre baseline e ablações nas três métricas principais. A ablação de resolução (64×64) e a remoção da camada densa são as que mais impactam o desempenho absoluto.*
 
@@ -267,11 +258,11 @@ Essa combinação não foi executada durante esta Sprint e deve ser o **primeiro
 
 | Prioridade | Ação | Justificativa |
 |---|---|---|
-| 🔴 Alta | Fixar seed aleatório em todas as runs (`random_seed = 42`) | Elimina a principal fonte de variância no AUC-ROC; torna resultados reproduzíveis |
-| 🔴 Alta | Adotar `higher_dropout` como configuração padrão | Melhor sensibilidade e F1; mais equilibrado no radar multidimensional |
-| 🔴 Alta | Reservar conjunto de teste independente (hold-out final) | Impede sobreajuste das escolhas ao conjunto de validação |
-| 🟡 Média | Investigar e tratar desbalanceamento de classes (oversampling / class weights) | PR-AUC < 0,55 é o principal indicador de problema não resolvido |
-| 🟡 Média | Repetir ablações com ≥ 5 runs cada e seed fixo | 3 runs são insuficientes para conclusões estatisticamente robustas |
-| 🟡 Média | Ajustar learning rate ao variar batch size no `l2batch` | A regra de escalonamento linear (lr ∝ batch_size) não foi aplicada |
-| 🟢 Baixa | Avaliar ensemble de 3–5 runs com `higher_dropout` | Estabiliza AUC sem necessidade de nova arquitetura ou dados adicionais |
-| 🟢 Baixa | Testar `ablacao_input_64x64` com camadas densas completas | Pode combinar a estabilidade de AUC da arquitetura menor com a sensibilidade da camada densa |
+| Alta | Fixar seed aleatório em todas as runs (`random_seed = 42`) | Elimina a principal fonte de variância no AUC-ROC; torna resultados reproduzíveis |
+| Alta | Adotar `higher_dropout` como configuração padrão | Melhor sensibilidade e F1; mais equilibrado no radar multidimensional |
+| Alta | Reservar conjunto de teste independente (hold-out final) | Impede sobreajuste das escolhas ao conjunto de validação |
+| Média | Investigar e tratar desbalanceamento de classes (oversampling / class weights) | PR-AUC < 0,55 é o principal indicador de problema não resolvido |
+| Média | Repetir ablações com ≥ 5 runs cada e seed fixo | 3 runs são insuficientes para conclusões estatisticamente robustas |
+| Média | Ajustar learning rate ao variar batch size no `l2batch` | A regra de escalonamento linear (lr ∝ batch_size) não foi aplicada |
+| Baixa | Avaliar ensemble de 3–5 runs com `higher_dropout` | Estabiliza AUC sem necessidade de nova arquitetura ou dados adicionais |
+| Baixa | Testar `ablacao_input_64x64` com camadas densas completas | Pode combinar a estabilidade de AUC da arquitetura menor com a sensibilidade da camada densa |
