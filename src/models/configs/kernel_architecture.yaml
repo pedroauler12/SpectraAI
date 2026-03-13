@@ -1,0 +1,39 @@
+# Pilar: Arquitetura (Model) - Variação de Kernel Size
+# Objetivo científico: Descobrir se o modelo precisa de kernels maiores para capturar padrões maiores nas Terras Raras.
+# Hipótese: Kernel 5x5 pode capturar relações espaciais mais amplas sem aumentar muito a complexidade.
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  
+  # Filtros (mantém baseline)
+  filters: [32, 64]            # Baseline
+  kernel_size: 5               # VARIAÇÃO: aumentado de 3 - MAIOR VISÃO RECEPTIVA
+  pool_size: 2
+  
+  # Regularization (igual ao baseline)
+  l2_regularizer: 0.001
+  conv_dropout_rate: 0.2
+  dense_dropout_rate: 0.5
+  
+  # Dense layers (igual ao baseline)
+  dense_units: 128
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  validation_split: 0.2
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true

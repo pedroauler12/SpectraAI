@@ -1,0 +1,34 @@
+# Combinação Otimizada 2: Robusta & Estável (melhor generalização)
+# Objetivo: Máxima regularização com arquitetura moderada
+# Combinação: Filtros moderados + dropout forte + L2 forte + batch grande
+# Hipótese: Combinação defensiva contra overfitting, melhor generalização
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  filters: [32, 64]            # Moderado
+  kernel_size: 3
+  pool_size: 2
+  l2_regularizer: 0.005        # Forte
+  conv_dropout_rate: 0.3       # Forte
+  dense_dropout_rate: 0.6      # Forte
+  dense_units: 128
+
+training:
+  batch_size: 64               # Grande (mais estabili dade)
+  epochs: 75                   # Mais épocas para convergência com regularização
+  learning_rate: 0.0005        # Lento e constante
+  validation_split: 0.25       # Mais validação
+  optimizer: adam
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalizer_path: outputs/a04_cnn_data_prep/cnn_normalizer_zscore.npz
+  normalization_method: zscore
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: true
+  save_history: true

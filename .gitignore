@@ -23,3 +23,4 @@ __pycache__/
 outputs/trained_models/
 *.keras
 data/
+*.h5

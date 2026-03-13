@@ -1,0 +1,4 @@
+rows_total_pos_merge=92
+configs_unicas=13
+sort_metric=val_f1
+melhor_config=higher_dropout

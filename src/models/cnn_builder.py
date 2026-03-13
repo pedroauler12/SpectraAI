@@ -68,6 +68,7 @@ def build_cnn_model(
     dropout_rate: float = 0.5,
     l2_regularizer: float = 0.001,
     conv_dropout_rate: float = 0.2,
+    augmentation_layer: Optional[tf.keras.layers.Layer] = None,
 ) -> Sequential:
     """
     Constrói um modelo CNN com arquitetura:
@@ -161,7 +162,13 @@ def build_cnn_model(
     layers_list = [
         # ========== INPUT LAYER ==========
         layers.Input(shape=input_shape),
+    ]
 
+    # ========== AUGMENTATION (opcional) ==========
+    if augmentation_layer is not None:
+        layers_list.append(augmentation_layer)
+
+    layers_list.append(
         # ========== PRIMEIRA CONVOLUÇÃO COM REGULARIZAÇÃO L2 ==========
         layers.Conv2D(
             filters=conv1_filters,
@@ -171,7 +178,7 @@ def build_cnn_model(
             kernel_regularizer=regularizers.l2(l2_regularizer) if l2_regularizer > 0 else None,
             name='conv2d_1'
         ),
-    ]
+    )
 
     # Adicionar Dropout após primeira Conv se configurado
     if conv_dropout_rate > 0:

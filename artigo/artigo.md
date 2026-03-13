@@ -98,13 +98,43 @@ Visando superar a limitação estrutural da MLP, que ignora a vizinhança espaci
 * **Tensores Espaciais:** Em vez de vetorizar os pixels, a CNN recebe o chip em sua forma original (Altura x Largura x Canais), permitindo que filtros convolucionais identifiquem texturas e padrões morfológicos do solo.
 * **Data Augmentation:** Implementação de rotações e espelhamentos para simular diferentes orientações geológicas e prevenir o *overfitting*.
 
-#### 3.2.6. Protocolo de Divisão de Dados e Anti-Leakage
+#### 3.2.6 Protocolo de Divisão de Dados e Controle de Vazamento
 
-O controle de **vazamento de dados (spatial leakage)** é rigoroso. A divisão em treino (60%), validação (20%) e teste (20%) é feita no nível de **cena (image_id)**. Amostras da mesma imagem permanecem no mesmo grupo, utilizando **StratifiedGroupKFold** para manter a proporção de classes em todos os folds e impedir que o modelo memorize condições específicas de uma única captura.
+&emsp;&emsp;O controle de vazamento de dados (data leakage) foi considerado na etapa de preparação dos conjuntos de treinamento, validação e teste. Inicialmente, o dataset tabular contendo os pixels extraídos das cenas ASTER é filtrado para remover amostras com rótulos inválidos. Em seguida, as amostras válidas são divididas por meio de amostragem estratificada, garantindo que a proporção entre as classes seja preservada em todos os subconjuntos.
 
-#### 3.2.7. Protocolo de Avaliação e Produto Final
+&emsp;&emsp;A divisão é realizada em duas etapas utilizando a função train_test_split da biblioteca scikit-learn. Na primeira etapa, os dados são separados em treinamento (70%) e conjunto temporário (30%), mantendo a estratificação das classes. Na segunda etapa, o conjunto temporário é novamente dividido de forma estratificada em validação (15%) e teste (15%). Esse procedimento assegura que cada subconjunto represente adequadamente a distribuição original das classes.
 
-O limiar de decisão ($\tau$) não é fixado em 0.5, sendo otimizado no conjunto de validação para maximizar o **F1-Score** na curva Precision-Recall. As métricas finais incluem Acurácia, Precisão, Recall, F1-score, Balanced Accuracy, ROC-AUC e PR-AUC. O produto final é um mecanismo reprodutível que permite ordenar áreas por probabilidade estimada, servindo como base para a expansão da prospecção mineral da **Frontera Minerals**.
+&emsp;&emsp;Durante a preparação dos dados para a CNN, as amostras são convertidas em tensores com formato (N, H, W, C), compatível com o padrão channels-last utilizado pelo TensorFlow/Keras. Cada chip multiespectral é representado como um tensor 128 × 128 × 9, correspondendo às nove bandas espectrais selecionadas do sensor ASTER.
+
+&emsp;&emsp;A normalização dos dados é realizada por padronização z-score por canal espectral, cujos parâmetros (média e desvio padrão) são estimados exclusivamente a partir do conjunto de treinamento. Esses mesmos parâmetros são posteriormente aplicados aos conjuntos de validação e teste, evitando vazamento de informação estatística entre os subconjuntos.
+
+#### 3.2.7 Arquitetura da CNN e Hiperparâmetros
+
+&emsp;&emsp;Para a etapa de visão computacional foi implementada uma rede neural convolucional utilizada como arquitetura baseline para experimentos com chips multiespectrais do sensor ASTER. A rede recebe como entrada tensores tridimensionais correspondentes aos chips extraídos das cenas, preservando tanto a estrutura espacial quanto a informação espectral das bandas. Cada amostra possui dimensão 128 × 128 × 9, representando nove bandas espectrais selecionadas do sensor. A arquitetura é composta por dois blocos convolucionais seguidos por camadas densas de classificação. Cada bloco inclui uma camada Conv2D com ativação ReLU, regularização L2 aplicada aos pesos e uma operação de MaxPooling2D responsável pela redução da dimensionalidade espacial. Após a extração de características, o tensor é convertido em vetor por meio da operação Flatten e processado por uma camada densa com 128 unidades, seguida por uma camada de saída com ativação sigmoid que produz a probabilidade associada à classe positiva.
+
+&emsp;&emsp;Para investigar o impacto de escolhas arquiteturais e de treinamento, foram definidas duas configurações experimentais utilizadas no estudo de ablação: uma configuração baseline e uma configuração com maior regularização por meio de taxas de dropout mais elevadas e learning rate reduzido. A Tabela 1 apresenta os principais hiperparâmetros utilizados nas duas configurações, destacando que apenas as taxas de dropout nas camadas convolucionais e densas, bem como o learning rate do otimizador, foram alterados entre os experimentos, enquanto os demais parâmetros foram mantidos constantes para permitir comparação controlada entre as variantes do modelo.
+
+Tabela 1 – Hiperparâmetros utilizados nas configurações do ablation study
+
+| Parâmetro | baseline | higher_dropout | deeper_network | smaller_input | higher_lr_only | higher_dropout_only |
+|---|---|---|---|---|---|---|
+| input_shape | [128,128,9] | [128,128,9] | [128,128,9] | [64,64,9] | [128,128,9] | [128,128,9] |
+| num_classes | 2 | 2 | 2 | 2 | 2 | 2 |
+| filters | [32,64] | [32,64] | [32,64,128] | [32,64] | [32,64] | [32,64] |
+| kernel_size | 3 | 3 | 3 | 3 | 3 | 3 |
+| pool_size | 2 | 2 | 2 | 2 | 2 | 2 |
+| l2_regularizer | 0.001 | 0.001 | 0.001 | 0.001 | 0.001 | 0.001 |
+| conv_dropout_rate | 0.2 | 0.3 | 0.2 | 0.2 | 0.2 | 0.3 |
+| dense_dropout_rate | 0.5 | 0.6 | 0.5 | 0.5 | 0.5 | 0.6 |
+| dense_units | 128 | 128 | 128 | 128 | 128 | 128 |
+| batch_size | 32 | 32 | 32 | 32 | 32 | 32 |
+| epochs | 50 | 50 | 50 | 50 | 50 | 50 |
+| learning_rate | 0.001 | 0.0005 | 0.001 | 0.001 | 0.0005 | 0.001 |
+| optimizer | adam | adam | adam | adam | adam | adam |
+| objetivo do teste | configuração base | maior regularização | maior profundidade | reduzir custo computacional | isolar efeito do LR | isolar efeito do dropout |
+---
+
+&emsp;&emsp;O protocolo experimental foi estruturado para avaliar a capacidade de redes neurais convolucionais em identificar padrões associados à presença de elementos de terras raras a partir de dados multiespectrais ASTER. O conjunto de dados foi dividido em três subconjuntos independentes: treinamento (70%), validação (15%) e teste (15%), utilizando amostragem estratificada para preservar a proporção de classes. Durante o treinamento, o conjunto de validação é utilizado para monitorar o desempenho da rede ao longo das épocas e identificar possíveis sinais de sobreajuste (*overfitting*), enquanto o conjunto de teste permanece isolado e é utilizado apenas na avaliação final do modelo selecionado. O desempenho é avaliado principalmente por meio das métricas F1-score e área sob a curva ROC (ROC-AUC), adequadas para cenários com possível desbalanceamento entre classes.
 
 ## 4. Trabalhos Relacionados
 
@@ -133,10 +163,15 @@ O limiar de decisão ($\tau$) não é fixado em 0.5, sendo otimizado no conjunto
 &emsp;&emsp;Essa convergência entre modelos _data-driven_ e a necessidade de interpretar assinaturas minerais complexas corrobora a adoção de redes neurais no SpectraAI. Ao utilizar redes neurais e visão computacional para processar imagens ASTER, o projeto promove o ranqueamento de áreas prospectivas de terras raras de forma escalável, objetiva e com alta fidelidade geológica.
 
 
-## 5. Proposta Metodológica Preliminar
+## 5. Discussão
 
-  Como proposta preliminar, o projeto estrutura a transformação das cenas ASTER em amostras padronizadas (“chips” multiespectrais) rotuladas em classes positivas e negativas a partir do *ground truth* fornecido. Em seguida, avalia-se um conjunto inicial de modelos supervisionados, abrangendo baselines clássicos e alternativas baseadas em redes neurais, com foco em generalização e redução de subjetividade na interpretação. A saída esperada é um escore ou probabilidade por amostra/região, permitindo o ranqueamento de áreas prospectivas para posterior validação geológica e refinamento do método nas próximas Sprints.
+&emsp;&emsp;Os resultados obtidos indicam que a utilização de chips multiespectrais do sensor ASTER combinados com redes neurais convolucionais constitui uma abordagem promissora para a identificação de padrões associados à presença de elementos de terras raras. A estrutura espacial dos chips, aliada à informação espectral distribuída nas diferentes bandas, permite que o modelo aprenda representações discriminativas diretamente a partir dos dados. Dessa forma, a CNN atua como um mecanismo de extração automática de características capaz de capturar relações espaciais e espectrais relevantes, reduzindo a dependência de engenharia manual de atributos.
 
+&emsp;&emsp;A organização do pipeline experimental buscou consistência metodológica e confiabilidade na avaliação do modelo. A divisão  dos dados em conjuntos de treinamento, validação e teste contribui para preservar a distribuição das classes ao longo do processo de modelagem, enquanto o isolamento do conjunto de teste até a etapa final evita vieses na estimativa de desempenho. Nesse contexto, o uso do F1-score e da área sob a curva ROC (ROC-AUC) permite avaliar simultaneamente o equilíbrio entre precisão e recall e a capacidade discriminativa do modelo em diferentes limiares de decisão.
+
+&emsp;&emsp;Os experimentos conduzidos no ablation study oferecem uma análise adicional sobre o impacto de decisões arquiteturais e de hiperparâmetros no comportamento do modelo. A comparação entre diferentes níveis de dropout e valores de learning rate permite observar como mecanismos de regularização influenciam a capacidade de generalização da rede. Em particular, a combinação de penalização L2 nas camadas convolucionais e camadas de dropout atua como um controle sobre a complexidade efetiva do modelo, reduzindo a tendência de memorização de padrões específicos do conjunto de treinamento, o que é especialmente relevante em cenários com dados geoespaciais limitados ou fortemente correlacionados.
+
+&emsp;&emsp;Apesar dos resultados encorajadores, algumas limitações devem ser consideradas. A arquitetura empregada foi intencionalmente simples e utilizada como modelo de referência inicial, o que sugere a possibilidade de melhorias por meio de arquiteturas mais profundas ou estratégias adicionais de regularização e ajuste de hiperparâmetros. Trabalhos futuros podem explorar redes convolucionais mais complexas, diferentes resoluções espaciais dos chips e a integração de atributos geoespaciais derivados. Ainda assim, o pipeline desenvolvido demonstra o potencial do uso de aprendizado profundo aplicado a dados de sensoriamento remoto como ferramenta de apoio à prospecção mineral, permitindo ordenar áreas de interesse com base em escores probabilísticos de potencial prospectivo.
 
 ### Referências
 
