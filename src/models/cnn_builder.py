@@ -251,6 +251,101 @@ def build_cnn_model(
     return model
 
 
+def build_deep_cnn_model(
+    input_shape: Tuple[int, int, int],
+    n_classes: int,
+    filters_list: list = None,
+    kernel_size: Tuple[int, int] = (3, 3),
+    dense_units: int = 128,
+    dropout_rate: float = 0.5,
+    l2_regularizer: float = 0.001,
+    conv_dropout_rate: float = 0.2,
+) -> Sequential:
+    """
+    Constrói um modelo CNN com profundidade variável (N blocos convolucionais).
+
+    Cada bloco convolucional consiste em:
+        Conv2D -> Dropout (opcional) -> MaxPooling2D
+
+    Parâmetros
+    ----------
+    input_shape : Tuple[int, int, int]
+        Forma da entrada (altura, largura, canais).
+    n_classes : int
+        Número de classes para classificação (>= 2).
+    filters_list : list
+        Lista com número de filtros por bloco convolucional.
+        Ex: [32, 64, 128] cria 3 blocos Conv2D.
+    kernel_size : Tuple[int, int], default=(3, 3)
+        Tamanho do kernel nas camadas Conv2D.
+    dense_units : int, default=128
+        Unidades na camada Dense oculta.
+    dropout_rate : float, default=0.5
+        Taxa de dropout na camada Dense.
+    l2_regularizer : float, default=0.001
+        Coeficiente de regularização L2.
+    conv_dropout_rate : float, default=0.2
+        Taxa de dropout após cada camada Conv2D.
+
+    Retorna
+    -------
+    Sequential
+        Modelo Keras compilado.
+    """
+    if filters_list is None:
+        filters_list = [32, 64, 128]
+
+    if n_classes < 2:
+        raise ValueError("n_classes deve ser >= 2")
+
+    reg = regularizers.l2(l2_regularizer) if l2_regularizer > 0 else None
+
+    layers_list = [layers.Input(shape=input_shape)]
+
+    for i, n_filters in enumerate(filters_list, start=1):
+        layers_list.append(
+            layers.Conv2D(
+                filters=n_filters,
+                kernel_size=kernel_size,
+                padding='same',
+                activation='relu',
+                kernel_regularizer=reg,
+                name=f'conv2d_{i}',
+            )
+        )
+        if conv_dropout_rate > 0:
+            layers_list.append(
+                layers.Dropout(rate=conv_dropout_rate, name=f'dropout_conv{i}')
+            )
+        layers_list.append(
+            layers.MaxPooling2D(pool_size=(2, 2), strides=2, name=f'maxpooling2d_{i}')
+        )
+
+    layers_list.extend([
+        layers.Flatten(name='flatten'),
+        layers.Dense(
+            units=dense_units,
+            activation='relu',
+            kernel_regularizer=reg,
+            name='dense_hidden',
+        ),
+        layers.Dropout(rate=dropout_rate, name='dropout_dense'),
+        layers.Dense(
+            units=n_classes,
+            activation='softmax' if n_classes > 2 else 'sigmoid',
+            kernel_regularizer=reg,
+            name='output',
+        ),
+    ])
+
+    model = Sequential(layers_list)
+
+    loss = 'categorical_crossentropy' if n_classes > 2 else 'binary_crossentropy'
+    model.compile(optimizer='adam', loss=loss, metrics=['accuracy'])
+
+    return model
+
+
 def get_model_architecture_summary(model: Sequential) -> dict:
     """
     Retorna informações resumidas sobre a arquitetura do modelo CNN.
