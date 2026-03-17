@@ -5,7 +5,9 @@ from src.models.cnn_tf_data_pipeline import (
     adapt_cnn_input_tensor,
     build_data_augmentation_layer,
     build_tf_data_pipeline,
+    build_train_val_test_tf_data,
     build_train_val_tf_data,
+    resize_image_tensor,
 )
 
 
@@ -37,6 +39,14 @@ def test_adapt_cnn_input_tensor_adds_channel_dim_for_3d_input():
     x_out, _ = adapt_cnn_input_tensor(x, data_format="channels_last", normalization="none")
 
     assert x_out.shape == (5, 12, 10, 1)
+
+
+def test_resize_image_tensor_changes_spatial_resolution():
+    x = _make_sample_images(n=4, h=12, w=10, c=3)
+    x_out = resize_image_tensor(x, size=(20, 16))
+
+    assert x_out.shape == (4, 20, 16, 3)
+    assert x_out.dtype == np.float32
 
 
 def test_build_tf_data_pipeline_train_with_augmentation():
@@ -91,3 +101,31 @@ def test_build_train_val_tf_data_reuses_train_normalizer():
     assert xb_val.shape == (3, 10, 10, 2)
     assert yb_val.shape == (3,)
 
+
+def test_build_train_val_test_tf_data_resizes_and_reuses_normalizer():
+    x_train = _make_sample_images(n=12, h=10, w=10, c=2)
+    y_train = np.array([0, 1] * 6, dtype=np.int64)
+    x_val = _make_sample_images(n=6, h=10, w=10, c=2)
+    y_val = np.array([0, 1, 0, 1, 0, 1], dtype=np.int64)
+    x_test = _make_sample_images(n=4, h=10, w=10, c=2)
+    y_test = np.array([0, 1, 0, 1], dtype=np.int64)
+
+    out = build_train_val_test_tf_data(
+        x_train,
+        y_train,
+        x_val,
+        y_val,
+        x_test,
+        y_test,
+        batch_size=2,
+        normalization="zscore",
+        resize_to=(14, 14),
+        target_channels=2,
+        augment_train=False,
+    )
+
+    assert out["test_meta"]["normalizer"] is out["train_meta"]["normalizer"]
+
+    xb_test, yb_test = next(iter(out["test_ds"]))
+    assert xb_test.shape == (2, 14, 14, 2)
+    assert yb_test.shape == (2,)
