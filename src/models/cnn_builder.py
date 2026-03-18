@@ -346,6 +346,123 @@ def build_deep_cnn_model(
     return model
 
 
+def load_backbone(
+    input_shape_3ch: Tuple[int, int, int],
+    fine_tune_last_layers: int = 20,
+) -> Tuple[tf.keras.Model, bool]:
+    """
+    Carrega MobileNetV2 pré-treinado no ImageNet como backbone para transfer learning.
+
+    A camada top (classificação) é removida. O backbone é congelado, com as
+    últimas ``fine_tune_last_layers`` camadas descongeladas para fine-tuning
+    (exceto BatchNormalization, que permanece congelada para estabilidade).
+
+    Parâmetros
+    ----------
+    input_shape_3ch : Tuple[int, int, int]
+        Shape esperado pelo backbone (H, W, 3).
+    fine_tune_last_layers : int, default=20
+        Número de camadas finais do backbone a descongelar.
+        Se 0, todo o backbone permanece congelado.
+
+    Retorna
+    -------
+    Tuple[tf.keras.Model, bool]
+        (backbone, pretrained) — o modelo e se os pesos ImageNet foram carregados.
+    """
+    try:
+        backbone = tf.keras.applications.MobileNetV2(
+            include_top=False,
+            weights="imagenet",
+            input_shape=input_shape_3ch,
+        )
+        pretrained = True
+    except Exception as exc:
+        print(f"Falha ao carregar pesos pretrained ({exc}). Usando pesos aleatorios.")
+        backbone = tf.keras.applications.MobileNetV2(
+            include_top=False,
+            weights=None,
+            input_shape=input_shape_3ch,
+        )
+        pretrained = False
+
+    backbone.trainable = False
+    if fine_tune_last_layers > 0:
+        for layer in backbone.layers[-fine_tune_last_layers:]:
+            if not isinstance(layer, layers.BatchNormalization):
+                layer.trainable = True
+    return backbone, pretrained
+
+
+def build_transfer_model(
+    input_shape: Tuple[int, int, int],
+    learning_rate: float = 1e-4,
+    fine_tune_last_layers: int = 20,
+    dropout_rate: float = 0.25,
+) -> Tuple[tf.keras.Model, dict]:
+    """
+    Constrói modelo de transfer learning com MobileNetV2 para classificação binária.
+
+    Arquitetura:
+        Input (H, W, 9) → Conv2D 1×1 (9→3) → BN → ReLU → MobileNetV2 → GAP → Dropout → Dense(1, sigmoid)
+
+    A camada adaptadora 1×1 projeta as 9 bandas ASTER para 3 canais,
+    compatíveis com os pesos ImageNet do backbone.
+
+    Parâmetros
+    ----------
+    input_shape : Tuple[int, int, int]
+        Shape de entrada (H, W, C). Ex: (160, 160, 9).
+    learning_rate : float, default=1e-4
+        Taxa de aprendizado do otimizador Adam.
+    fine_tune_last_layers : int, default=20
+        Camadas finais do backbone descongeladas para fine-tuning.
+    dropout_rate : float, default=0.25
+        Taxa de dropout antes da camada de predição.
+
+    Retorna
+    -------
+    Tuple[tf.keras.Model, dict]
+        (model, info) — modelo compilado e dicionário com metadados da arquitetura.
+    """
+    backbone, pretrained = load_backbone(
+        (input_shape[0], input_shape[1], 3),
+        fine_tune_last_layers=fine_tune_last_layers,
+    )
+
+    inputs = tf.keras.Input(shape=input_shape, name="aster_9ch_input")
+    x = layers.Conv2D(3, kernel_size=1, padding="same", use_bias=False, name="channel_adapter")(inputs)
+    x = layers.BatchNormalization(name="channel_adapter_bn")(x)
+    x = layers.Activation("relu", name="channel_adapter_relu")(x)
+    x = backbone(x, training=False)
+    x = layers.GlobalAveragePooling2D(name="gap")(x)
+    x = layers.Dropout(dropout_rate, name="dropout")(x)
+    outputs = layers.Dense(1, activation="sigmoid", name="prediction")(x)
+
+    model = tf.keras.Model(inputs, outputs, name="a08_transfer_learning_mobilenetv2")
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        loss="binary_crossentropy",
+        metrics=[
+            tf.keras.metrics.BinaryAccuracy(name="accuracy"),
+            tf.keras.metrics.Precision(name="precision"),
+            tf.keras.metrics.Recall(name="recall"),
+            tf.keras.metrics.AUC(name="roc_auc"),
+            tf.keras.metrics.AUC(curve="PR", name="pr_auc"),
+        ],
+    )
+
+    info = {
+        "backbone": "MobileNetV2",
+        "pretrained_loaded": pretrained,
+        "fine_tune_last_layers": int(fine_tune_last_layers),
+        "input_shape": tuple(int(v) for v in input_shape),
+        "learning_rate": float(learning_rate),
+        "dropout_rate": float(dropout_rate),
+    }
+    return model, info
+
+
 def get_model_architecture_summary(model: Sequential) -> dict:
     """
     Retorna informações resumidas sobre a arquitetura do modelo CNN.

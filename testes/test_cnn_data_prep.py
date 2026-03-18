@@ -12,6 +12,8 @@ from src.models.cnn_data_prep import (
     infer_cnn_shape,
     labels_from_extracted_codes,
     prepare_cnn_inputs,
+    prepare_grouped_cnn_splits,
+    stratified_group_train_val_test_split,
 )
 
 
@@ -43,6 +45,43 @@ def sample_df():
         data[f"pixel_{idx}"] = values[:, idx]
 
     return pd.DataFrame(data)
+
+
+@pytest.fixture
+def grouped_split_df():
+    rng = np.random.default_rng(7)
+    n_channels = 2
+    height = 2
+    width = 2
+    pixels_per_sample = n_channels * height * width
+
+    rows = []
+    for prefix, label_name in (("POS", 1), ("NEG", 0)):
+        for group_idx in range(5):
+            image_id = f"{prefix}_{group_idx}"
+            for chip_idx in range(2):
+                row = {
+                    "path": f"chips/{image_id}/chip_{chip_idx}.tif",
+                    "count": n_channels,
+                    "height": height,
+                    "width": width,
+                }
+                values = rng.normal(loc=label_name * 10.0, scale=1.0, size=pixels_per_sample)
+                for pixel_idx, value in enumerate(values):
+                    row[f"pixel_{pixel_idx}"] = value
+                rows.append(row)
+
+    unknown = {
+        "path": "chips/UNK/chip_0.tif",
+        "count": n_channels,
+        "height": height,
+        "width": width,
+    }
+    for pixel_idx, value in enumerate(rng.normal(size=pixels_per_sample)):
+        unknown[f"pixel_{pixel_idx}"] = value
+    rows.append(unknown)
+
+    return pd.DataFrame(rows)
 
 
 def test_get_ordered_pixel_columns_numeric_order():
@@ -156,3 +195,70 @@ def test_prepare_cnn_inputs_reuses_normalizer(sample_df):
     assert train_out["X"].shape == (4, 3, 4, 4)
     assert val_out["X"].shape == (2, 3, 4, 4)
     assert val_out["normalizer"] == train_out["normalizer"]
+
+
+def test_stratified_group_train_val_test_split_has_disjoint_groups(tmp_path, grouped_split_df):
+    codes_path = tmp_path / "extracted_codes.json"
+    codes_path.write_text(
+        json.dumps(
+            {
+                "positivos": [f"POS_{idx}" for idx in range(5)],
+                "negativos": [f"NEG_{idx}" for idx in range(5)],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    labels, image_ids = labels_from_extracted_codes(grouped_split_df["path"], codes_path)
+    valid_mask = labels != -1
+
+    out = stratified_group_train_val_test_split(
+        image_ids[valid_mask],
+        labels[valid_mask],
+        test_size=0.2,
+        val_size=0.2,
+        seed=42,
+    )
+
+    train_ids = set(out["train_ids"].tolist())
+    val_ids = set(out["val_ids"].tolist())
+    test_ids = set(out["test_ids"].tolist())
+
+    assert train_ids.isdisjoint(val_ids)
+    assert train_ids.isdisjoint(test_ids)
+    assert val_ids.isdisjoint(test_ids)
+    assert len(train_ids | val_ids | test_ids) == 10
+    assert len(out["train_idx"]) + len(out["val_idx"]) + len(out["test_idx"]) == int(valid_mask.sum())
+
+
+def test_prepare_grouped_cnn_splits_builds_tensor_partitions(tmp_path, grouped_split_df):
+    codes_path = tmp_path / "extracted_codes.json"
+    codes_path.write_text(
+        json.dumps(
+            {
+                "positivos": [f"POS_{idx}" for idx in range(5)],
+                "negativos": [f"NEG_{idx}" for idx in range(5)],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    out = prepare_grouped_cnn_splits(
+        grouped_split_df,
+        extracted_codes_path=codes_path,
+        data_format="channels_last",
+        test_size=0.2,
+        val_size=0.2,
+        seed=42,
+    )
+
+    assert out["X_train"].ndim == 4
+    assert out["X_val"].ndim == 4
+    assert out["X_test"].ndim == 4
+    assert out["X_train"].shape[-1] == 2
+    assert out["X_train"].shape[1:3] == (2, 2)
+    assert out["split_meta"]["n_valid"] == 20
+    assert out["split_meta"]["n_train"] + out["split_meta"]["n_val"] + out["split_meta"]["n_test"] == 20
+    assert set(out["image_ids_train"]).isdisjoint(set(out["image_ids_val"]))
+    assert set(out["image_ids_train"]).isdisjoint(set(out["image_ids_test"]))
+    assert set(out["image_ids_val"]).isdisjoint(set(out["image_ids_test"]))
