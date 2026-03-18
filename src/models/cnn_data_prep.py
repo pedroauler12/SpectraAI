@@ -362,3 +362,206 @@ def prepare_cnn_inputs(
         "shape_info": shape_info,
         "normalizer": fitted_normalizer,
     }
+
+
+def stratified_group_train_val_test_split(
+    image_ids: Iterable[str] | np.ndarray,
+    labels: Iterable[int] | np.ndarray,
+    *,
+    test_size: float = 0.2,
+    val_size: float = 0.2,
+    seed: int = 42,
+) -> dict[str, np.ndarray | float]:
+    """
+    Gera split treino/validacao/teste estratificado no nivel de ``image_id``.
+
+    O protocolo segue a mesma logica do baseline classico:
+    - ``test_size`` e ``val_size`` representam fracoes do dataset inteiro;
+    - a estratificacao acontece no nivel de imagem para reduzir vazamento;
+    - o retorno inclui indices por linha para fatiar tensores/DataFrames.
+    """
+    from sklearn.model_selection import train_test_split
+
+    if not 0 < test_size < 1:
+        raise ValueError("test_size deve estar no intervalo (0, 1).")
+    if not 0 < val_size < 1:
+        raise ValueError("val_size deve estar no intervalo (0, 1).")
+    if test_size + val_size >= 1:
+        raise ValueError("test_size + val_size deve ser < 1.")
+
+    image_ids_arr = np.asarray(list(image_ids), dtype=object)
+    labels_arr = np.asarray(list(labels), dtype=np.int64)
+
+    if image_ids_arr.shape[0] != labels_arr.shape[0]:
+        raise ValueError(
+            f"Tamanho de image_ids ({image_ids_arr.shape[0]}) difere de labels ({labels_arr.shape[0]})."
+        )
+    if image_ids_arr.size == 0:
+        raise ValueError("Nao ha amostras para dividir.")
+
+    split_frame = pd.DataFrame(
+        {
+            "image_id": image_ids_arr.astype(str),
+            "label": labels_arr,
+        }
+    )
+    split_frame = split_frame[split_frame["image_id"] != ""].copy()
+    if split_frame.empty:
+        raise ValueError("Nenhum image_id valido encontrado para o split.")
+
+    image_level = (
+        split_frame.groupby("image_id", as_index=False)["label"]
+        .agg(lambda values: int(pd.Series(values).mode().iloc[0]))
+        .sort_values("image_id")
+        .reset_index(drop=True)
+    )
+    if image_level["label"].nunique() < 2:
+        raise ValueError("Necessario ao menos duas classes no nivel de image_id.")
+
+    train_val_ids, test_ids = train_test_split(
+        image_level["image_id"],
+        test_size=test_size,
+        random_state=seed,
+        stratify=image_level["label"],
+    )
+
+    train_val_frame = image_level[image_level["image_id"].isin(train_val_ids)].copy()
+    val_size_rel = val_size / (1.0 - test_size)
+    train_ids, val_ids = train_test_split(
+        train_val_frame["image_id"],
+        test_size=val_size_rel,
+        random_state=seed,
+        stratify=train_val_frame["label"],
+    )
+
+    train_ids_arr = train_ids.to_numpy(dtype=object)
+    val_ids_arr = val_ids.to_numpy(dtype=object)
+    test_ids_arr = test_ids.to_numpy(dtype=object)
+
+    train_idx = np.flatnonzero(np.isin(image_ids_arr, train_ids_arr))
+    val_idx = np.flatnonzero(np.isin(image_ids_arr, val_ids_arr))
+    test_idx = np.flatnonzero(np.isin(image_ids_arr, test_ids_arr))
+
+    return {
+        "train_idx": train_idx,
+        "val_idx": val_idx,
+        "test_idx": test_idx,
+        "train_ids": train_ids_arr,
+        "val_ids": val_ids_arr,
+        "test_ids": test_ids_arr,
+        "test_size": float(test_size),
+        "val_size": float(val_size),
+        "train_size": float(1.0 - test_size - val_size),
+    }
+
+
+def prepare_grouped_cnn_splits(
+    df: pd.DataFrame,
+    *,
+    labels: Iterable[int] | np.ndarray | None = None,
+    image_ids: Iterable[str] | np.ndarray | None = None,
+    extracted_codes_path: str | Path | None = None,
+    path_column: str = "path",
+    drop_invalid_labels: bool = True,
+    pixel_prefix: str = "pixel_",
+    n_channels: int | None = None,
+    height: int | None = None,
+    width: int | None = None,
+    data_format: str = "channels_last",
+    dtype: str | np.dtype = np.float32,
+    test_size: float = 0.2,
+    val_size: float = 0.2,
+    seed: int = 42,
+) -> dict[str, np.ndarray | dict]:
+    """
+    Prepara tensores CNN crus e aplica split treino/validacao/teste por ``image_id``.
+
+    Esta funcao centraliza o protocolo de dados usado em notebooks diferentes:
+    - converte ``pixel_*`` em tensor 4D;
+    - infere ``labels`` e ``image_ids`` quando recebe ``extracted_codes_path``;
+    - remove rotulos invalidos, se configurado;
+    - devolve tensores crus separados para que resize/normalizacao/augmentacao
+      possam ser aplicados depois no pipeline de transfer learning.
+    """
+    x, shape_info = dataframe_to_cnn_tensor(
+        df,
+        pixel_prefix=pixel_prefix,
+        n_channels=n_channels,
+        height=height,
+        width=width,
+        data_format=data_format,
+        dtype=dtype,
+    )
+
+    y = None
+    ids = None
+
+    if labels is not None:
+        y = np.asarray(list(labels), dtype=np.int64)
+        if y.shape[0] != len(df):
+            raise ValueError(f"Tamanho de labels ({y.shape[0]}) difere de len(df) ({len(df)}).")
+
+    if image_ids is not None:
+        ids = np.asarray(list(image_ids), dtype=object)
+        if ids.shape[0] != len(df):
+            raise ValueError(f"Tamanho de image_ids ({ids.shape[0]}) difere de len(df) ({len(df)}).")
+
+    if extracted_codes_path is not None:
+        if path_column not in df.columns:
+            raise ValueError(f"Coluna '{path_column}' nao encontrada no DataFrame.")
+        inferred_y, inferred_ids = labels_from_extracted_codes(df[path_column], extracted_codes_path)
+        if y is None:
+            y = inferred_y
+        if ids is None:
+            ids = inferred_ids
+
+    if y is None:
+        raise ValueError("Informe labels ou extracted_codes_path para gerar os rotulos.")
+    if ids is None:
+        raise ValueError("Informe image_ids ou extracted_codes_path para gerar os grupos de split.")
+
+    valid_mask = np.ones(len(df), dtype=bool)
+    if drop_invalid_labels:
+        valid_mask &= y != -1
+        valid_mask &= ids.astype(str) != ""
+
+    x_valid = x[valid_mask]
+    y_valid = y[valid_mask]
+    ids_valid = ids[valid_mask]
+
+    split = stratified_group_train_val_test_split(
+        ids_valid,
+        y_valid,
+        test_size=test_size,
+        val_size=val_size,
+        seed=seed,
+    )
+
+    train_idx = split["train_idx"]
+    val_idx = split["val_idx"]
+    test_idx = split["test_idx"]
+
+    return {
+        "X_train": x_valid[train_idx].astype(np.float32, copy=False),
+        "y_train": y_valid[train_idx],
+        "image_ids_train": ids_valid[train_idx],
+        "X_val": x_valid[val_idx].astype(np.float32, copy=False),
+        "y_val": y_valid[val_idx],
+        "image_ids_val": ids_valid[val_idx],
+        "X_test": x_valid[test_idx].astype(np.float32, copy=False),
+        "y_test": y_valid[test_idx],
+        "image_ids_test": ids_valid[test_idx],
+        "shape_info": shape_info,
+        "split_meta": {
+            **split,
+            "n_total": int(len(df)),
+            "n_valid": int(x_valid.shape[0]),
+            "n_train": int(len(train_idx)),
+            "n_val": int(len(val_idx)),
+            "n_test": int(len(test_idx)),
+            "class_balance_train": dict(zip(*np.unique(y_valid[train_idx], return_counts=True))),
+            "class_balance_val": dict(zip(*np.unique(y_valid[val_idx], return_counts=True))),
+            "class_balance_test": dict(zip(*np.unique(y_valid[test_idx], return_counts=True))),
+        },
+        "valid_mask": valid_mask,
+    }

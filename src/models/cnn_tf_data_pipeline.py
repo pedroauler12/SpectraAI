@@ -52,6 +52,37 @@ def build_data_augmentation_layer(
     )
 
 
+def resize_image_tensor(
+    x: np.ndarray,
+    *,
+    size: tuple[int, int] | None = None,
+    method: str = "bilinear",
+    antialias: bool = True,
+) -> np.ndarray:
+    """
+    Redimensiona um tensor 4D ``(N, H, W, C)`` para ``size`` usando ``tf.image.resize``.
+    """
+    x_in = np.asarray(x)
+    if x_in.ndim != 4:
+        raise ValueError(f"Esperado tensor 4D, recebido shape={x_in.shape}.")
+    if size is None:
+        return x_in.astype(np.float32, copy=False)
+
+    target_h, target_w = (int(size[0]), int(size[1]))
+    if target_h <= 0 or target_w <= 0:
+        raise ValueError("size deve conter duas dimensoes > 0.")
+    if x_in.shape[1] == target_h and x_in.shape[2] == target_w:
+        return x_in.astype(np.float32, copy=False)
+
+    resized = tf.image.resize(
+        x_in.astype(np.float32, copy=False),
+        size=(target_h, target_w),
+        method=method,
+        antialias=antialias,
+    )
+    return resized.numpy().astype(np.float32, copy=False)
+
+
 def _normalizer_to_channels_last(normalizer: dict[str, Any]) -> dict[str, Any]:
     """
     Converte normalizador salvo em channels_first para broadcast em channels_last.
@@ -83,6 +114,9 @@ def adapt_cnn_input_tensor(
     x: np.ndarray,
     *,
     data_format: str = "channels_last",
+    resize_to: tuple[int, int] | None = None,
+    resize_method: str = "bilinear",
+    resize_antialias: bool = True,
     target_channels: int | None = None,
     repeat_single_channel: bool = False,
     normalization: str = "none",
@@ -117,6 +151,13 @@ def adapt_cnn_input_tensor(
         x_out = x_in
 
     x_out = x_out.astype(np.float32, copy=False)
+
+    x_out = resize_image_tensor(
+        x_out,
+        size=resize_to,
+        method=resize_method,
+        antialias=resize_antialias,
+    )
 
     if target_channels is not None and target_channels <= 0:
         raise ValueError("target_channels deve ser > 0.")
@@ -164,6 +205,9 @@ def build_tf_data_pipeline(
     normalization: str = "none",
     normalizer: dict[str, Any] | None = None,
     data_format: str = "channels_last",
+    resize_to: tuple[int, int] | None = None,
+    resize_method: str = "bilinear",
+    resize_antialias: bool = True,
     target_channels: int | None = None,
     repeat_single_channel: bool = False,
     drop_remainder: bool = False,
@@ -179,6 +223,9 @@ def build_tf_data_pipeline(
     x_ready, fitted_normalizer = adapt_cnn_input_tensor(
         x,
         data_format=data_format,
+        resize_to=resize_to,
+        resize_method=resize_method,
+        resize_antialias=resize_antialias,
         target_channels=target_channels,
         repeat_single_channel=repeat_single_channel,
         normalization=normalization,
@@ -238,6 +285,7 @@ def build_train_val_tf_data(
     batch_size: int = 32,
     normalization: str = "zscore",
     data_format: str = "channels_last",
+    resize_to: tuple[int, int] | None = None,
     target_channels: int | None = None,
     augment_train: bool = True,
     seed: int = 42,
@@ -255,6 +303,7 @@ def build_train_val_tf_data(
         augment=augment_train,
         normalization=normalization,
         data_format=data_format,
+        resize_to=resize_to,
         target_channels=target_channels,
     )
 
@@ -269,6 +318,7 @@ def build_train_val_tf_data(
         normalization=normalization,
         normalizer=train_meta["normalizer"],
         data_format=data_format,
+        resize_to=resize_to,
         target_channels=target_channels,
     )
 
@@ -279,3 +329,56 @@ def build_train_val_tf_data(
         "train_meta": train_meta,
         "val_meta": val_meta,
     }
+
+
+def build_train_val_test_tf_data(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_val: np.ndarray,
+    y_val: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    *,
+    batch_size: int = 32,
+    normalization: str = "zscore",
+    data_format: str = "channels_last",
+    resize_to: tuple[int, int] | None = None,
+    target_channels: int | None = None,
+    augment_train: bool = True,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """
+    Cria pipeline treino/validacao/teste reutilizando normalizador do treino.
+    """
+    out = build_train_val_tf_data(
+        x_train,
+        y_train,
+        x_val,
+        y_val,
+        batch_size=batch_size,
+        normalization=normalization,
+        data_format=data_format,
+        resize_to=resize_to,
+        target_channels=target_channels,
+        augment_train=augment_train,
+        seed=seed,
+    )
+
+    test_ds, test_meta = build_tf_data_pipeline(
+        x_test,
+        y_test,
+        batch_size=batch_size,
+        training=False,
+        shuffle=False,
+        seed=seed,
+        augment=False,
+        normalization=normalization,
+        normalizer=out["normalizer"],
+        data_format=data_format,
+        resize_to=resize_to,
+        target_channels=target_channels,
+    )
+
+    out["test_ds"] = test_ds
+    out["test_meta"] = test_meta
+    return out
