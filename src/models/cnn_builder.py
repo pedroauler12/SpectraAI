@@ -348,22 +348,17 @@ def build_deep_cnn_model(
 
 def load_backbone(
     input_shape_3ch: Tuple[int, int, int],
-    fine_tune_last_layers: int = 20,
 ) -> Tuple[tf.keras.Model, bool]:
     """
     Carrega MobileNetV2 pré-treinado no ImageNet como backbone para transfer learning.
 
-    A camada top (classificação) é removida. O backbone é congelado, com as
-    últimas ``fine_tune_last_layers`` camadas descongeladas para fine-tuning
-    (exceto BatchNormalization, que permanece congelada para estabilidade).
+    A camada top (classificação) é removida e o backbone é **totalmente congelado**.
+    Para descongelar camadas para fine-tuning, use ``unfreeze_backbone_layers``.
 
     Parâmetros
     ----------
     input_shape_3ch : Tuple[int, int, int]
         Shape esperado pelo backbone (H, W, 3).
-    fine_tune_last_layers : int, default=20
-        Número de camadas finais do backbone a descongelar.
-        Se 0, todo o backbone permanece congelado.
 
     Retorna
     -------
@@ -387,36 +382,108 @@ def load_backbone(
         pretrained = False
 
     backbone.trainable = False
-    if fine_tune_last_layers > 0:
-        for layer in backbone.layers[-fine_tune_last_layers:]:
-            if not isinstance(layer, layers.BatchNormalization):
-                layer.trainable = True
     return backbone, pretrained
+
+
+def unfreeze_backbone_layers(
+    model: tf.keras.Model,
+    fine_tune_last_layers: int = 20,
+    learning_rate: float = 1e-5,
+) -> dict:
+    """
+    Desbloqueia as últimas camadas do backbone para fine-tuning e recompila o modelo.
+
+    Implementa a fase 2 do pipeline de transfer learning: após treinar o head
+    com backbone congelado, esta função desbloqueia as últimas N camadas do
+    backbone (exceto BatchNormalization) e recompila com learning rate menor.
+
+    Parâmetros
+    ----------
+    model : tf.keras.Model
+        Modelo construído por ``build_transfer_model``.
+    fine_tune_last_layers : int, default=20
+        Número de camadas finais do backbone a descongelar.
+    learning_rate : float, default=1e-5
+        Learning rate para a fase de fine-tuning (tipicamente 10x menor que a fase 1).
+
+    Retorna
+    -------
+    dict
+        Resumo com total de camadas, camadas descongeladas e parâmetros treináveis.
+    """
+    backbone = None
+    for layer in model.layers:
+        if isinstance(layer, tf.keras.Model) and "mobilenet" in layer.name.lower():
+            backbone = layer
+            break
+
+    if backbone is None:
+        raise ValueError("Backbone MobileNetV2 não encontrado no modelo.")
+
+    backbone.trainable = True
+    total_layers = len(backbone.layers)
+    unfrozen_names = []
+
+    for layer in backbone.layers[:-fine_tune_last_layers]:
+        layer.trainable = False
+
+    for layer in backbone.layers[-fine_tune_last_layers:]:
+        if isinstance(layer, layers.BatchNormalization):
+            layer.trainable = False
+        else:
+            layer.trainable = True
+            unfrozen_names.append(layer.name)
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        loss="binary_crossentropy",
+        metrics=[
+            tf.keras.metrics.BinaryAccuracy(name="accuracy"),
+            tf.keras.metrics.Precision(name="precision"),
+            tf.keras.metrics.Recall(name="recall"),
+            tf.keras.metrics.AUC(name="roc_auc"),
+            tf.keras.metrics.AUC(curve="PR", name="pr_auc"),
+        ],
+    )
+
+    trainable_count = sum(
+        tf.keras.backend.count_params(w) for w in model.trainable_weights
+    )
+    non_trainable_count = sum(
+        tf.keras.backend.count_params(w) for w in model.non_trainable_weights
+    )
+
+    return {
+        "backbone_total_layers": total_layers,
+        "fine_tune_last_layers": fine_tune_last_layers,
+        "unfrozen_layer_names": unfrozen_names,
+        "n_unfrozen": len(unfrozen_names),
+        "learning_rate": float(learning_rate),
+        "trainable_params": int(trainable_count),
+        "non_trainable_params": int(non_trainable_count),
+    }
 
 
 def build_transfer_model(
     input_shape: Tuple[int, int, int],
     learning_rate: float = 1e-4,
-    fine_tune_last_layers: int = 20,
     dropout_rate: float = 0.25,
 ) -> Tuple[tf.keras.Model, dict]:
     """
     Constrói modelo de transfer learning com MobileNetV2 para classificação binária.
 
+    O backbone inicia **totalmente congelado** (fase 1 — head training).
+    Para a fase 2 (fine-tuning), use ``unfreeze_backbone_layers``.
+
     Arquitetura:
         Input (H, W, 9) → Conv2D 1×1 (9→3) → BN → ReLU → MobileNetV2 → GAP → Dropout → Dense(1, sigmoid)
-
-    A camada adaptadora 1×1 projeta as 9 bandas ASTER para 3 canais,
-    compatíveis com os pesos ImageNet do backbone.
 
     Parâmetros
     ----------
     input_shape : Tuple[int, int, int]
         Shape de entrada (H, W, C). Ex: (160, 160, 9).
     learning_rate : float, default=1e-4
-        Taxa de aprendizado do otimizador Adam.
-    fine_tune_last_layers : int, default=20
-        Camadas finais do backbone descongeladas para fine-tuning.
+        Taxa de aprendizado do otimizador Adam para a fase 1.
     dropout_rate : float, default=0.25
         Taxa de dropout antes da camada de predição.
 
@@ -427,7 +494,6 @@ def build_transfer_model(
     """
     backbone, pretrained = load_backbone(
         (input_shape[0], input_shape[1], 3),
-        fine_tune_last_layers=fine_tune_last_layers,
     )
 
     inputs = tf.keras.Input(shape=input_shape, name="aster_9ch_input")
@@ -455,7 +521,7 @@ def build_transfer_model(
     info = {
         "backbone": "MobileNetV2",
         "pretrained_loaded": pretrained,
-        "fine_tune_last_layers": int(fine_tune_last_layers),
+        "phase": "head_training",
         "input_shape": tuple(int(v) for v in input_shape),
         "learning_rate": float(learning_rate),
         "dropout_rate": float(dropout_rate),
