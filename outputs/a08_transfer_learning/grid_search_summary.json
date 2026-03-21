@@ -1,0 +1,99 @@
+{
+  "n_configs": 4,
+  "learning_rates": [
+    0.0001,
+    1e-05
+  ],
+  "batch_sizes": [
+    8,
+    32
+  ],
+  "fixed_params": {
+    "head_lr": 0.0001,
+    "head_epochs": 4,
+    "ft_epochs": 8,
+    "ft_last_layers": 20,
+    "normalization": "zscore",
+    "target_size": [
+      160,
+      160
+    ]
+  },
+  "best_config": {
+    "learning_rate": 0.0001,
+    "batch_size": 8,
+    "test_accuracy": 0.8475,
+    "test_f1": 0.7907,
+    "test_roc_auc": 0.9475
+  },
+  "all_results": [
+    {
+      "learning_rate": 0.0001,
+      "batch_size": 8,
+      "config": "LR=1.0e-04_BS=8",
+      "head_epochs": 4,
+      "ft_epochs": 8,
+      "total_epochs": 12,
+      "best_epoch": 12,
+      "best_val_loss": 0.4709,
+      "best_val_accuracy": 0.7966,
+      "test_accuracy": 0.8475,
+      "test_balanced_acc": 0.8279,
+      "test_f1": 0.7907,
+      "test_precision": 0.85,
+      "test_recall": 0.7391,
+      "test_roc_auc": 0.9475
+    },
+    {
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "config": "LR=1.0e-04_BS=32",
+      "head_epochs": 4,
+      "ft_epochs": 8,
+      "total_epochs": 12,
+      "best_epoch": 10,
+      "best_val_loss": 0.4987,
+      "best_val_accuracy": 0.7966,
+      "test_accuracy": 0.8475,
+      "test_balanced_acc": 0.82,
+      "test_f1": 0.7805,
+      "test_precision": 0.8889,
+      "test_recall": 0.6957,
+      "test_roc_auc": 0.9185
+    },
+    {
+      "learning_rate": 1e-05,
+      "batch_size": 8,
+      "config": "LR=1.0e-05_BS=8",
+      "head_epochs": 4,
+      "ft_epochs": 8,
+      "total_epochs": 12,
+      "best_epoch": 11,
+      "best_val_loss": 0.4933,
+      "best_val_accuracy": 0.8136,
+      "test_accuracy": 0.8983,
+      "test_balanced_acc": 0.901,
+      "test_f1": 0.875,
+      "test_precision": 0.84,
+      "test_recall": 0.913,
+      "test_roc_auc": 0.945
+    },
+    {
+      "learning_rate": 1e-05,
+      "batch_size": 32,
+      "config": "LR=1.0e-05_BS=32",
+      "head_epochs": 4,
+      "ft_epochs": 6,
+      "total_epochs": 10,
+      "best_epoch": 6,
+      "best_val_loss": 0.6792,
+      "best_val_accuracy": 0.5424,
+      "test_accuracy": 0.5763,
+      "test_balanced_acc": 0.4958,
+      "test_f1": 0.1935,
+      "test_precision": 0.375,
+      "test_recall": 0.1304,
+      "test_roc_auc": 0.7482
+    }
+  ]
+}
