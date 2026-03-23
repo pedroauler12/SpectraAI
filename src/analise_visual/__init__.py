@@ -10,6 +10,7 @@ from .graficos import (
     plot_spatial_heatmap,
     analysis_questions,
 )
+from .framework_visualizacao import plot_probability_distributions
 
 __all__ = [
     "PlotSpec",
@@ -22,4 +23,5 @@ __all__ = [
     "plot_examples",
     "plot_spatial_heatmap",
     "analysis_questions",
+    "plot_probability_distributions",
 ]
