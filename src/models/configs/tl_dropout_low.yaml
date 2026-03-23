@@ -1,0 +1,32 @@
+# TL Dropout Low — Regularizacao mais leve
+# Testa dropout 0.1 para verificar se modelo se beneficia de menos regularizacao
+
+model:
+  input_shape: [128, 128, 9]
+  num_classes: 2
+  backbone: mobilenetv2
+  resize_to: [160, 160]
+  dropout_rate: 0.1
+  fine_tune_last_layers: 20
+
+training:
+  batch_size: 8
+  head_epochs: 6
+  head_learning_rate: 1.0e-4
+  fine_tune_epochs: 12
+  fine_tune_learning_rate: 1.0e-5
+  early_stopping_patience_head: 3
+  early_stopping_patience_ft: 4
+
+data:
+  dataset_path: data/pixels_dataset.csv
+  codes_path: data/extracted_codes.json
+  normalization_method: zscore
+  test_size: 0.2
+  val_size: 0.2
+
+output:
+  models_dir: outputs/trained_models/
+  logs_dir: outputs/training_logs/
+  save_model: false
+  save_history: false
