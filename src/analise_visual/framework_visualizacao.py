@@ -13,7 +13,7 @@ permitindo customizações adicionais externas.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -152,6 +152,89 @@ def plot_confusion_matrix(
                 va="center",
                 color="white" if value > threshold else "black",
             )
+
+    fig.tight_layout()
+    return _finalize_plot(fig, save_path, show)
+
+
+def plot_probability_distributions(
+    y_true: Sequence[int] | np.ndarray,
+    y_score: Sequence[float] | np.ndarray,
+    thresholds: Mapping[str, float] | Sequence[float] | None = None,
+    *,
+    class_names: tuple[str, str] = ("Negativo", "Positivo"),
+    title: str = "Distribuicao de probabilidades por classe",
+    bins: int = 20,
+    alpha: float = 0.55,
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> plt.Figure:
+    """
+    Plota a distribuicao de ``P(classe positiva)`` separada por classe real.
+
+    Parameters
+    ----------
+    y_true : Sequence[int] | np.ndarray
+        Rotulos verdadeiros binarios.
+    y_score : Sequence[float] | np.ndarray
+        Probabilidades previstas para a classe positiva.
+    thresholds : Mapping[str, float] | Sequence[float] | None, optional
+        Thresholds a desenhar no grafico. Pode ser dict ``label -> valor`` ou
+        uma sequencia simples de valores.
+    """
+    y_true_arr = np.asarray(y_true).reshape(-1)
+    y_score_arr = np.asarray(y_score, dtype=float).reshape(-1)
+
+    if y_true_arr.shape[0] != y_score_arr.shape[0]:
+        raise ValueError("y_true e y_score devem ter o mesmo tamanho.")
+    if y_true_arr.size == 0:
+        raise ValueError("Informe ao menos uma amostra para plotar.")
+    if len(class_names) != 2:
+        raise ValueError("class_names deve conter exatamente dois nomes.")
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    mask_neg = y_true_arr == 0
+    mask_pos = y_true_arr == 1
+
+    ax.hist(
+        y_score_arr[mask_neg],
+        bins=bins,
+        alpha=alpha,
+        color="steelblue",
+        label=f"{class_names[0]} (y=0)",
+        density=True,
+    )
+    ax.hist(
+        y_score_arr[mask_pos],
+        bins=bins,
+        alpha=alpha,
+        color="darkorange",
+        label=f"{class_names[1]} (y=1)",
+        density=True,
+    )
+
+    if thresholds is not None:
+        if isinstance(thresholds, Mapping):
+            threshold_items = list(thresholds.items())
+        else:
+            threshold_items = [(f"thr={float(v):.3f}", float(v)) for v in thresholds]
+
+        for label, value in threshold_items:
+            ax.axvline(
+                x=float(value),
+                linestyle="--",
+                linewidth=1.5,
+                alpha=0.9,
+                label=label,
+            )
+
+    ax.set_title(title)
+    ax.set_xlabel("Probabilidade prevista da classe positiva")
+    ax.set_ylabel("Densidade")
+    ax.set_xlim(0, 1)
+    ax.grid(True, linestyle="--", alpha=0.3)
+    ax.legend()
 
     fig.tight_layout()
     return _finalize_plot(fig, save_path, show)
