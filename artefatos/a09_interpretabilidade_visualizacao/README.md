@@ -57,7 +57,10 @@ Essa aplicacao permite:
 - buscar um granule ASTER via NASA EarthData;
 - recortar e empilhar um chip multibanda;
 - rodar inferencia com o modelo treinado no A08;
-- visualizar a probabilidade prevista e uma composicao false-color do chip.
+- comparar threshold otimizado (`threshold_f1`) com o corte padrao `0.5`;
+- visualizar a probabilidade prevista;
+- comparar preview RGB natural e composicao false-color do chip;
+- sinalizar quando a qualidade da cena estiver degradada por nuvem, sombra ou baixa variacao.
 
 Execucao local:
 
@@ -93,7 +96,8 @@ Para sustentar a entrega do item 3 e a demo, o projeto passa a incluir:
   - reconstrucao do normalizador do A08;
   - inferencia sobre chips ASTER multibanda;
   - fluxo de busca e recorte via EarthData;
-  - geracao de preview false-color para visualizacao.
+  - geracao de preview RGB e false-color para visualizacao;
+  - avaliacao simples de qualidade do chip para apoio a interpretacao.
 
 ## Compatibilidade de ambiente
 

@@ -39,12 +39,14 @@ class TransferInferenceBundle:
 
     project_root: Path
     model: Any
+    model_name: str
     normalizer: dict[str, Any]
     target_size: tuple[int, int]
     target_channels: int
     normalization: str
     class_names: tuple[str, str]
     decision_threshold: float
+    decision_threshold_name: str
     seed: int
     dataset_csv: Path
     extracted_codes_json: Path
@@ -67,6 +69,9 @@ class PredictionResult:
     bbox_wgs84: tuple[float, float, float, float] | None
     chip_shape: tuple[int, int, int] | None = None
     preview_png_path: str | None = None
+    preview_false_color_path: str | None = None
+    preview_rgb_path: str | None = None
+    quality_report: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -150,6 +155,21 @@ def build_false_color_preview(
     return np.stack(channels, axis=-1)
 
 
+def build_rgb_preview(
+    chip_array: np.ndarray,
+    band_order: Sequence[str] = DEFAULT_BAND_ORDER,
+    rgb_bands: tuple[str, str, str] = ("B03N", "B02", "B01"),
+) -> np.ndarray:
+    """
+    Gera preview RGB mais proximo da visualizacao natural do ASTER.
+    """
+    return build_false_color_preview(
+        chip_array,
+        band_order=band_order,
+        rgb_bands=rgb_bands,
+    )
+
+
 def save_preview_png(preview_rgb: np.ndarray, output_path: str | Path) -> Path:
     """
     Salva preview RGB em PNG para visualizacao no notebook/app.
@@ -168,6 +188,111 @@ def save_preview_png(preview_rgb: np.ndarray, output_path: str | Path) -> Path:
     return out_path
 
 
+def _resolve_threshold_from_metrics(
+    project_root: Path,
+    *,
+    threshold_name: str,
+    fallback_threshold: float,
+) -> tuple[float, str]:
+    metrics_path = project_root / "outputs" / "a09_interpretabilidade_visualizacao" / "test_metrics_comparison.csv"
+    if not metrics_path.exists():
+        return float(fallback_threshold), "threshold_0.5"
+
+    try:
+        metrics_df = pd.read_csv(metrics_path)
+    except Exception:
+        return float(fallback_threshold), "threshold_0.5"
+
+    if {"threshold_name", "threshold"} - set(metrics_df.columns):
+        return float(fallback_threshold), "threshold_0.5"
+
+    matched = metrics_df.loc[metrics_df["threshold_name"] == threshold_name, "threshold"]
+    if matched.empty:
+        return float(fallback_threshold), "threshold_0.5"
+
+    try:
+        resolved = float(matched.iloc[0])
+    except Exception:
+        return float(fallback_threshold), "threshold_0.5"
+    return resolved, threshold_name
+
+
+def assess_chip_quality(
+    chip_array: np.ndarray,
+    *,
+    band_order: Sequence[str] = DEFAULT_BAND_ORDER,
+) -> dict[str, Any]:
+    """
+    Gera sinais simples de qualidade para apoiar a leitura do resultado.
+    """
+    chip = np.asarray(chip_array, dtype=np.float32)
+    if chip.ndim != 3:
+        raise ValueError(f"Esperado chip 3D (H, W, C), recebido shape={chip.shape}.")
+
+    finite_mask = np.isfinite(chip)
+    finite_ratio = float(np.mean(finite_mask))
+
+    if not np.any(finite_mask):
+        return {
+            "severity": "critical",
+            "warnings": ["chip_sem_pixels_validos"],
+            "finite_ratio": 0.0,
+            "zero_ratio": 1.0,
+            "bright_ratio": 0.0,
+            "dark_ratio": 1.0,
+            "low_dynamic_bands": list(band_order),
+        }
+
+    valid_values = chip[finite_mask]
+    zero_ratio = float(np.mean(np.isclose(valid_values, 0.0)))
+
+    p2 = np.nanpercentile(chip, 2, axis=(0, 1))
+    p98 = np.nanpercentile(chip, 98, axis=(0, 1))
+    dynamic_span = p98 - p2
+    low_dynamic_bands = [
+        str(band_order[idx])
+        for idx, span in enumerate(dynamic_span)
+        if (not np.isfinite(span)) or float(span) <= 1e-6
+    ]
+
+    rgb_preview = build_rgb_preview(chip, band_order=band_order)
+    rgb_brightness = np.mean(rgb_preview, axis=-1)
+    bright_ratio = float(np.mean(rgb_brightness >= 0.92))
+    dark_ratio = float(np.mean(rgb_brightness <= 0.08))
+
+    warnings_list: list[str] = []
+    severity = "ok"
+
+    if finite_ratio < 0.98:
+        warnings_list.append("baixo_percentual_de_pixels_finitos")
+        severity = "warning"
+    if zero_ratio > 0.20:
+        warnings_list.append("muitos_pixels_nulos_ou_sem_resposta")
+        severity = "warning"
+    if len(low_dynamic_bands) >= 3:
+        warnings_list.append("bandas_com_baixa_variacao_espectral")
+        severity = "warning"
+    if bright_ratio > 0.20:
+        warnings_list.append("possivel_nuvem_ou_saturacao")
+        severity = "warning"
+    if dark_ratio > 0.35:
+        warnings_list.append("possivel_sombra_ou_no_data")
+        severity = "warning"
+
+    if finite_ratio < 0.90 or bright_ratio > 0.35 or len(low_dynamic_bands) >= 6:
+        severity = "critical"
+
+    return {
+        "severity": severity,
+        "warnings": warnings_list,
+        "finite_ratio": finite_ratio,
+        "zero_ratio": zero_ratio,
+        "bright_ratio": bright_ratio,
+        "dark_ratio": dark_ratio,
+        "low_dynamic_bands": low_dynamic_bands,
+    }
+
+
 def load_transfer_inference_bundle(
     project_root: str | Path | None = None,
     *,
@@ -180,7 +305,8 @@ def load_transfer_inference_bundle(
     target_size: tuple[int, int] = (160, 160),
     normalization: str = "zscore",
     class_names: tuple[str, str] = DEFAULT_CLASS_NAMES,
-    decision_threshold: float = 0.5,
+    decision_threshold: float | None = None,
+    decision_threshold_name: str = "threshold_f1",
 ) -> TransferInferenceBundle:
     """
     Carrega o modelo do A08 e reconstrói o normalizador do treino.
@@ -216,16 +342,26 @@ def load_transfer_inference_bundle(
 
     model = _load_keras_model(model_file)
     target_channels = int(split_data["shape_info"]["n_channels"])
+    resolved_threshold, resolved_threshold_name = _resolve_threshold_from_metrics(
+        root,
+        threshold_name=decision_threshold_name,
+        fallback_threshold=0.5 if decision_threshold is None else float(decision_threshold),
+    )
+    if decision_threshold is not None:
+        resolved_threshold = float(decision_threshold)
+        resolved_threshold_name = decision_threshold_name or "manual"
 
     return TransferInferenceBundle(
         project_root=root,
         model=model,
+        model_name="Transfer Learning (A08)",
         normalizer=normalizer,
         target_size=tuple(int(v) for v in target_size),
         target_channels=target_channels,
         normalization=normalization,
         class_names=class_names,
-        decision_threshold=float(decision_threshold),
+        decision_threshold=float(resolved_threshold),
+        decision_threshold_name=resolved_threshold_name,
         seed=int(seed),
         dataset_csv=dataset_csv_path,
         extracted_codes_json=codes_path,
@@ -245,6 +381,8 @@ def predict_chip_array(
     cloud_cover: float | None = None,
     bbox_wgs84: tuple[float, float, float, float] | None = None,
     preview_png_path: str | Path | None = None,
+    false_color_preview_path: str | Path | None = None,
+    rgb_preview_path: str | Path | None = None,
 ) -> PredictionResult:
     """
     Aplica pre-processamento consistente com o A08 e executa inferencia.
@@ -268,11 +406,23 @@ def predict_chip_array(
 
     prob_pos = _predict_positive_probability(bundle, batch)
     pred_class = int(prob_pos >= bundle.decision_threshold)
-    preview_path_value: str | None = None
+    if false_color_preview_path is None and preview_png_path is not None:
+        false_color_preview_path = preview_png_path
 
-    if preview_png_path is not None:
-        preview_rgb = build_false_color_preview(chip_arr, band_order=DEFAULT_BAND_ORDER)
-        preview_path_value = str(save_preview_png(preview_rgb, preview_png_path))
+    preview_path_value: str | None = None
+    preview_false_color_value: str | None = None
+    preview_rgb_value: str | None = None
+
+    if false_color_preview_path is not None:
+        preview_false = build_false_color_preview(chip_arr, band_order=DEFAULT_BAND_ORDER)
+        preview_false_color_value = str(save_preview_png(preview_false, false_color_preview_path))
+        preview_path_value = preview_false_color_value
+
+    if rgb_preview_path is not None:
+        preview_rgb = build_rgb_preview(chip_arr, band_order=DEFAULT_BAND_ORDER)
+        preview_rgb_value = str(save_preview_png(preview_rgb, rgb_preview_path))
+
+    quality_report = assess_chip_quality(chip_arr, band_order=DEFAULT_BAND_ORDER)
 
     return PredictionResult(
         lat=float(lat) if lat is not None else np.nan,
@@ -287,6 +437,9 @@ def predict_chip_array(
         bbox_wgs84=bbox_wgs84,
         chip_shape=tuple(int(v) for v in chip_arr.shape),
         preview_png_path=preview_path_value,
+        preview_false_color_path=preview_false_color_value,
+        preview_rgb_path=preview_rgb_value,
+        quality_report=quality_report,
     )
 
 
@@ -388,6 +541,7 @@ def predict_point_from_earthdata(
     point_dir = _point_cache_dir(cache_root_path, lat=float(lat), lon=float(lon))
     chip_path = point_dir / "chip_earthdata_multiband.tif"
     preview_path = point_dir / "chip_false_color.png"
+    preview_rgb_path = point_dir / "chip_rgb.png"
 
     bbox = bbox_with_point_inside(
         lat=float(lat),
@@ -398,7 +552,7 @@ def predict_point_from_earthdata(
     )
 
     if force_refresh:
-        for path in (chip_path, preview_path):
+        for path in (chip_path, preview_path, preview_rgb_path):
             if path.exists():
                 path.unlink()
 
@@ -465,4 +619,6 @@ def predict_point_from_earthdata(
         cloud_cover=cloud_cover_value(best_granule),
         bbox_wgs84=bbox,
         preview_png_path=preview_path,
+        false_color_preview_path=preview_path,
+        rgb_preview_path=preview_rgb_path,
     )
