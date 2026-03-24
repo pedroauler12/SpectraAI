@@ -17,6 +17,7 @@ from typing import Iterable, Mapping, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import auc, precision_recall_curve, roc_curve
 
 
 def _prepare_output_path(save_path: str | Path | None) -> Path | None:
@@ -236,6 +237,261 @@ def plot_probability_distributions(
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.legend()
 
+    fig.tight_layout()
+    return _finalize_plot(fig, save_path, show)
+
+
+def plot_probability_boxplot(
+    y_true: Sequence[int] | np.ndarray,
+    y_score: Sequence[float] | np.ndarray,
+    *,
+    class_names: tuple[str, str] = ("Negativo", "Positivo"),
+    title: str = "Boxplot das probabilidades por classe real",
+    ylabel: str = "Probabilidade prevista da classe positiva",
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> plt.Figure:
+    """
+    Plota boxplots de ``P(classe positiva)`` separados pela classe real.
+    """
+    y_true_arr = np.asarray(y_true).reshape(-1)
+    y_score_arr = np.asarray(y_score, dtype=float).reshape(-1)
+
+    if y_true_arr.shape[0] != y_score_arr.shape[0]:
+        raise ValueError("y_true e y_score devem ter o mesmo tamanho.")
+    if len(class_names) != 2:
+        raise ValueError("class_names deve conter exatamente dois nomes.")
+
+    data = [
+        y_score_arr[y_true_arr == 0],
+        y_score_arr[y_true_arr == 1],
+    ]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bp = ax.boxplot(
+        data,
+        patch_artist=True,
+        labels=[f"{class_names[0]} (y=0)", f"{class_names[1]} (y=1)"],
+        medianprops={"color": "black", "linewidth": 1.5},
+    )
+    colors = ["steelblue", "darkorange"]
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.65)
+
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(0, 1)
+    ax.grid(True, linestyle="--", alpha=0.3, axis="y")
+
+    fig.tight_layout()
+    return _finalize_plot(fig, save_path, show)
+
+
+def plot_roc_pr_curves(
+    y_true: Sequence[int] | np.ndarray,
+    y_score: Sequence[float] | np.ndarray,
+    *,
+    title_prefix: str = "Curvas de desempenho probabilistico",
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> plt.Figure:
+    """
+    Plota curvas ROC e Precision-Recall lado a lado.
+    """
+    y_true_arr = np.asarray(y_true).reshape(-1)
+    y_score_arr = np.asarray(y_score, dtype=float).reshape(-1)
+
+    if y_true_arr.shape[0] != y_score_arr.shape[0]:
+        raise ValueError("y_true e y_score devem ter o mesmo tamanho.")
+
+    fpr, tpr, _ = roc_curve(y_true_arr, y_score_arr)
+    precision, recall, _ = precision_recall_curve(y_true_arr, y_score_arr)
+    roc_auc_value = auc(fpr, tpr)
+    pr_auc_value = auc(recall, precision)
+    positive_rate = float(np.mean(y_true_arr == 1))
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    axes[0].plot(fpr, tpr, color="tab:blue", linewidth=2, label=f"AUC = {roc_auc_value:.3f}")
+    axes[0].plot([0, 1], [0, 1], linestyle="--", color="gray", linewidth=1)
+    axes[0].set_title(f"{title_prefix} - ROC")
+    axes[0].set_xlabel("False Positive Rate")
+    axes[0].set_ylabel("True Positive Rate")
+    axes[0].grid(True, linestyle="--", alpha=0.3)
+    axes[0].legend(loc="lower right")
+
+    axes[1].plot(recall, precision, color="tab:orange", linewidth=2, label=f"AUC = {pr_auc_value:.3f}")
+    axes[1].axhline(positive_rate, linestyle="--", color="gray", linewidth=1, label=f"Baseline = {positive_rate:.3f}")
+    axes[1].set_title(f"{title_prefix} - Precision-Recall")
+    axes[1].set_xlabel("Recall")
+    axes[1].set_ylabel("Precision")
+    axes[1].set_xlim(0, 1)
+    axes[1].set_ylim(0, 1)
+    axes[1].grid(True, linestyle="--", alpha=0.3)
+    axes[1].legend(loc="lower left")
+
+    fig.tight_layout()
+    return _finalize_plot(fig, save_path, show)
+
+
+def plot_threshold_sweep(
+    y_true: Sequence[int] | np.ndarray,
+    y_score: Sequence[float] | np.ndarray,
+    *,
+    thresholds: Sequence[float] | np.ndarray | None = None,
+    title: str = "Variacao das metricas por threshold",
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> plt.Figure:
+    """
+    Plota precision, recall, F1 e accuracy ao longo de uma grade de thresholds.
+    """
+    y_true_arr = np.asarray(y_true).reshape(-1).astype(int)
+    y_score_arr = np.asarray(y_score, dtype=float).reshape(-1)
+
+    if y_true_arr.shape[0] != y_score_arr.shape[0]:
+        raise ValueError("y_true e y_score devem ter o mesmo tamanho.")
+
+    if thresholds is None:
+        thresholds_arr = np.linspace(0.0, 1.0, 101)
+    else:
+        thresholds_arr = np.asarray(thresholds, dtype=float).reshape(-1)
+
+    precision_values = []
+    recall_values = []
+    f1_values = []
+    accuracy_values = []
+
+    for threshold in thresholds_arr:
+        y_pred = (y_score_arr >= threshold).astype(int)
+        tp = int(np.sum((y_true_arr == 1) & (y_pred == 1)))
+        tn = int(np.sum((y_true_arr == 0) & (y_pred == 0)))
+        fp = int(np.sum((y_true_arr == 0) & (y_pred == 1)))
+        fn = int(np.sum((y_true_arr == 1) & (y_pred == 0)))
+
+        precision = tp / (tp + fp) if (tp + fp) else 0.0
+        recall = tp / (tp + fn) if (tp + fn) else 0.0
+        accuracy = (tp + tn) / max(len(y_true_arr), 1)
+        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+
+        precision_values.append(precision)
+        recall_values.append(recall)
+        accuracy_values.append(accuracy)
+        f1_values.append(f1)
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(thresholds_arr, precision_values, label="Precision", linewidth=2)
+    ax.plot(thresholds_arr, recall_values, label="Recall", linewidth=2)
+    ax.plot(thresholds_arr, f1_values, label="F1", linewidth=2)
+    ax.plot(thresholds_arr, accuracy_values, label="Accuracy", linewidth=2)
+    ax.set_title(title)
+    ax.set_xlabel("Threshold")
+    ax.set_ylabel("Valor da metrica")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.grid(True, linestyle="--", alpha=0.3)
+    ax.legend(loc="best")
+
+    fig.tight_layout()
+    return _finalize_plot(fig, save_path, show)
+
+
+def _normalize_preview_channel(channel: np.ndarray) -> np.ndarray:
+    channel = np.asarray(channel, dtype=np.float32)
+    finite_mask = np.isfinite(channel)
+    if not np.any(finite_mask):
+        return np.zeros_like(channel, dtype=np.float32)
+
+    valid_values = channel[finite_mask]
+    low, high = np.percentile(valid_values, [2, 98])
+    if float(high) <= float(low):
+        return np.zeros_like(channel, dtype=np.float32)
+
+    normalized = (channel - low) / (high - low)
+    return np.clip(normalized, 0.0, 1.0).astype(np.float32, copy=False)
+
+
+def _chip_to_rgb_preview(
+    chip: np.ndarray,
+    *,
+    rgb_band_indices: tuple[int, int, int] = (2, 1, 0),
+) -> np.ndarray:
+    chip_arr = np.asarray(chip, dtype=np.float32)
+    if chip_arr.ndim != 3:
+        raise ValueError(f"Cada chip deve ser 3D (H, W, C), recebido shape={chip_arr.shape}.")
+
+    channels = []
+    for idx in rgb_band_indices:
+        if idx < 0 or idx >= chip_arr.shape[-1]:
+            raise ValueError(f"Indice de banda invalido: {idx} para chip com {chip_arr.shape[-1]} canais.")
+        channels.append(_normalize_preview_channel(chip_arr[..., idx]))
+    return np.stack(channels, axis=-1)
+
+
+def plot_marked_sample_chips(
+    chips: Sequence[np.ndarray] | np.ndarray,
+    *,
+    sample_ids: Sequence[str] | None = None,
+    labels: Sequence[int] | np.ndarray | None = None,
+    class_names: tuple[str, str] = ("Negativo", "Positivo"),
+    rgb_band_indices: tuple[int, int, int] = (2, 1, 0),
+    point_xy: tuple[int, int] | None = None,
+    ncols: int = 3,
+    title: str = "Exemplos de chips com ponto central marcado",
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> plt.Figure:
+    """
+    Plota uma grade de chips RGB com o ponto central marcado.
+    """
+    chips_arr = np.asarray(chips, dtype=np.float32)
+    if chips_arr.ndim != 4:
+        raise ValueError(f"Esperado tensor 4D (N, H, W, C), recebido shape={chips_arr.shape}.")
+
+    n_samples = chips_arr.shape[0]
+    if n_samples == 0:
+        raise ValueError("Informe ao menos um chip para plotar.")
+    if ncols <= 0:
+        raise ValueError("ncols deve ser > 0.")
+
+    sample_ids_list = list(sample_ids) if sample_ids is not None else [f"sample_{idx}" for idx in range(n_samples)]
+    if len(sample_ids_list) != n_samples:
+        raise ValueError("sample_ids deve ter o mesmo tamanho de chips.")
+
+    labels_arr = None if labels is None else np.asarray(labels).reshape(-1)
+    if labels_arr is not None and labels_arr.shape[0] != n_samples:
+        raise ValueError("labels deve ter o mesmo tamanho de chips.")
+
+    height, width = chips_arr.shape[1], chips_arr.shape[2]
+    center_x = width // 2 if point_xy is None else int(point_xy[0])
+    center_y = height // 2 if point_xy is None else int(point_xy[1])
+
+    nrows = int(np.ceil(n_samples / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.2 * ncols, 4.2 * nrows))
+    axes_arr = np.atleast_1d(axes).reshape(nrows, ncols)
+
+    for idx, ax in enumerate(axes_arr.flat):
+        if idx >= n_samples:
+            ax.axis("off")
+            continue
+
+        preview = _chip_to_rgb_preview(chips_arr[idx], rgb_band_indices=rgb_band_indices)
+        ax.imshow(preview)
+        ax.scatter(center_x, center_y, c="red", marker="x", s=60, linewidths=2)
+        ax.axvline(center_x, color="white", linestyle="--", linewidth=0.8, alpha=0.7)
+        ax.axhline(center_y, color="white", linestyle="--", linewidth=0.8, alpha=0.7)
+
+        title_lines = [sample_ids_list[idx]]
+        if labels_arr is not None:
+            label_value = int(labels_arr[idx])
+            label_text = class_names[label_value] if label_value in (0, 1) else str(label_value)
+            title_lines.append(f"Classe real: {label_text}")
+        ax.set_title("\n".join(title_lines), fontsize=10)
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    fig.suptitle(title, fontsize=14, y=1.02)
     fig.tight_layout()
     return _finalize_plot(fig, save_path, show)
 
