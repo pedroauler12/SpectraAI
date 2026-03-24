@@ -1,0 +1,9 @@
+{
+  "modelo": "Transfer Learning (A08)",
+  "acuracia_teste": "0.6000",
+  "confianca_media_corretas": "0.9448",
+  "confianca_media_incorretas": "0.9775",
+  "total_amostras_teste": 45,
+  "corretas": 27,
+  "incorretas": 18
+}
