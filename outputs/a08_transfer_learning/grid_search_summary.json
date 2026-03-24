@@ -22,9 +22,9 @@
   "best_config": {
     "learning_rate": 0.0001,
     "batch_size": 8,
-    "test_accuracy": 0.8983,
-    "test_f1": 0.8636,
-    "test_roc_auc": 0.936
+    "test_accuracy": 0.8475,
+    "test_f1": 0.8085,
+    "test_roc_auc": 0.9312
   },
   "all_results": [
     {
@@ -34,15 +34,15 @@
       "head_epochs": 4,
       "ft_epochs": 8,
       "total_epochs": 12,
-      "best_epoch": 9,
-      "best_val_loss": 0.4998,
+      "best_epoch": 12,
+      "best_val_loss": 0.4974,
       "best_val_accuracy": 0.7966,
-      "test_accuracy": 0.8983,
-      "test_balanced_acc": 0.8853,
-      "test_f1": 0.8636,
-      "test_precision": 0.9048,
+      "test_accuracy": 0.8475,
+      "test_balanced_acc": 0.8436,
+      "test_f1": 0.8085,
+      "test_precision": 0.7917,
       "test_recall": 0.8261,
-      "test_roc_auc": 0.936
+      "test_roc_auc": 0.9312
     },
     {
       "learning_rate": 0.0001,
