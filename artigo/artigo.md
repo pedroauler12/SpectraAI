@@ -136,7 +136,7 @@ Estabeleceu-se o desempenho de referência através de:
 Visando superar a limitação estrutural da MLP, que ignora a vizinhança espacial, o projeto evoluiu para o uso de **Redes Neurais Convolucionais (CNN)**:
 
 * **Tensores Espaciais:** Em vez de vetorizar os pixels, a CNN recebe o chip em sua forma original (Altura x Largura x Canais), permitindo que filtros convolucionais identifiquem texturas e padrões morfológicos do solo.
-* **Data Augmentation:** Implementação de rotações e espelhamentos para simular diferentes orientações geológicas e prevenir o *overfitting*.
+* **Data Augmentation:** Estratégia de aumento de dados aplicada exclusivamente ao conjunto de treinamento para expandir a diversidade de exemplos mantendo a integridade da avaliação. As transformações implementadas incluem: (i) `RandomFlip` com modo horizontal e vertical para simular diferentes perspectivas espaciais; (ii) `RandomRotation` com fator de 0,08 (±28,8°) para capturar variações de orientação geológica; (iii) `RandomContrast` com fator de 0,2 (redução de até 20% do contraste) para robustez a variações de iluminação e condições de aquisição. Uma análise sistemática explorou sete configurações de intensidade de augmentação (baseline, leve, moderada, intensa, rotação-aumentada, contraste-aumentado, combinada), com resultados documentados em `outputs/a08_transfer_learning/`, permitindo identificar a intensidade ótima de transformação que maximiza generalização sem prejudicar a representatividade dos padrões espectrais de interesse.
 
 #### 3.2.6 Protocolo de Divisão de Dados e Controle de Vazamento
 
@@ -177,6 +177,20 @@ Tabela 1 – Hiperparâmetros utilizados nas configurações do ablation study
 ---
 
 &emsp;&emsp;O protocolo experimental foi estruturado para avaliar a capacidade de redes neurais convolucionais em identificar padrões associados à presença de elementos de terras raras a partir de dados multiespectrais ASTER. O conjunto de dados foi dividido em três subconjuntos independentes: treinamento (70%), validação (15%) e teste (15%), utilizando amostragem estratificada para preservar a proporção de classes. Durante o treinamento, o conjunto de validação é utilizado para monitorar o desempenho da rede ao longo das épocas e identificar possíveis sinais de sobreajuste (*overfitting*), enquanto o conjunto de teste permanece isolado e é utilizado apenas na avaliação final do modelo selecionado. O desempenho é avaliado principalmente por meio das métricas F1-score e área sob a curva ROC (ROC-AUC), adequadas para cenários com possível desbalanceamento entre classes.
+
+#### 3.2.8. Transfer Learning e Adaptação de Redes Pré-Treinadas
+
+&emsp;&emsp;Reconhecendo o tamanho limitado do dataset (N=295) e a complexidade de treinar arquiteturas profundas do zero, o pipeline incorporou a estratégia de transfer learning por meio do backbone **MobileNetV2**, arquitetura eficiente pré-treinada em ImageNet. Essa abordagem aproveita representações de features genéricas aprendidas em vastos conjuntos de dados visuais e as adapta ao domínio específico de prospecção de terras raras a partir de dados multiespectrais ASTER.
+
+&emsp;&emsp;**Adaptação Espectral (Camada de Conversão 1×1):** O sensor ASTER fornece 9 bandas espectrais (VNIR + SWIR), enquanto o MobileNetV2 pré-treinado em ImageNet espera 3 canais (RGB). Em vez de descartar bandas ou redimensionar arbitrariamente os dados, o pipeline implementa uma camada adaptadora de convolução 1×1, que realiza uma combinação linear das 9 bandas para projetá-las em um espaço latente de 3 canais. Essa estratégia preserva a riqueza de informação espectral enquanto viabiliza o carregamento dos pesos pré-treinados, adicionando apenas ~30 parâmetros treináveis na entrada do modelo.
+
+&emsp;&emsp;**Estratégia de Treinamento em Duas Fases:**
+
+(i) **Fase 1 — Head Training (4 epochs, Learning Rate 1e-4):** O backbone MobileNetV2 permanece totalmente congelado, preservando os pesos pré-treinados do ImageNet. Apenas a camada adaptadora espectral e a cabeça de classificação (camadas Dense) são treinadas. Callbacks de parada antecipada (`EarlyStopping`) e redução de taxa de aprendizado (`ReduceLROnPlateau`) monitoram `val_loss` para evitar overfitting. Essa fase adapta o modelo ao domínio ASTER sem degradar características pré-aprendidas.
+
+(ii) **Fase 2 — Fine-Tuning Parcial (8 epochs):** Após o head estar adequadamente adaptado, desbloqueiam-se as últimas 20 camadas do MobileNetV2 (exceto BatchNormalization, que permanece congelada para estabilizar estatísticas). Para otimizar o desempenho, realizou-se grid search em learning rates {1e-4, 1e-5} × batch sizes {8, 32}. A melhor configuração (LR=1e-4, BS=8, 12 epochs totais: 4 head + 8 fine-tuning) alcançou desempenho em teste de Acurácia=0.848, F1=0.809 e ROC-AUC=0.931, demonstrando a eficácia do transfer learning com MobileNetV2 mesmo em cenários com dados limitados.
+
+&emsp;&emsp;Essa abordagem é especialmente apropriada para cenários com dados geoespaciais limitados, reduzindo o risco de overfitting ao mesmo tempo que aumenta a capacidade discriminativa frente aos padrões espectrais-espaciais associados a mineralizações de terras raras.
 
 ## 4. Trabalhos Relacionados
 
