@@ -401,7 +401,53 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 &emsp;&emsp;Apesar dos resultados encorajadores, algumas limitações devem ser consideradas. A arquitetura empregada foi intencionalmente simples e utilizada como modelo de referência inicial, o que sugere a possibilidade de melhorias por meio de arquiteturas mais profundas ou estratégias adicionais de regularização e ajuste de hiperparâmetros. Trabalhos futuros podem explorar redes convolucionais mais complexas, diferentes resoluções espaciais dos chips e a integração de atributos geoespaciais derivados. Ainda assim, o pipeline desenvolvido demonstra o potencial do uso de aprendizado profundo aplicado a dados de sensoriamento remoto como ferramenta de apoio à prospecção mineral, permitindo ordenar áreas de interesse com base em escores probabilísticos de potencial prospectivo.
 
-### Referências
+## 7. Conclusão Preliminar
+
+&emsp;&emsp;Este trabalho apresentou um pipeline integrado de ciência de dados e visão computacional para prospeccção de Elementos de Terras Raras a partir de imagens multiespectrais ASTER, demonstrando que a incorporação de informação espacial via redes neurais convolucionais e transfer learning oferece ganhos significativos sobre abordagens tabulares clássicas.
+
+### 7.1 Principais Achados
+
+&emsp;&emsp;Os experimentos sistemáticos revelaram:
+
+1. **Hierarquia de Desempenho Confirmada:** Transfer Learning (MobileNetV2, 84.75% Acc, ROC-AUC=0.9312) >> CNN Simples Treinada (82.44% Acc, ROC-AUC=0.9011) >> MLP em PCA-2D (79.66% Acc, ROC-AUC=0.8575), validando que tanto preservação espacial quanto conhecimento pré-aprendido são fatores críticos.
+
+2. **Generalização Robusta com Dataset Limitado:** Apesar de N=295 amostras (tamanho reduzido para deep learning), o MobileNetV2 com adaptação espectral via convolução 1×1 alcançou estado-da-arte em ROC-AUC (0.9312) e F1-score (0.8085), demostrando viabilidade técnica em cenários de dados geoespaciais operacionais.
+
+3. **Redução Significativa de Falsos Positivos:** A matriz de confusão do Transfer Learning (4 FP vs. 9 FP em CNN) é crítica operacionalmente, reduzindo desperdício de recursos em campanhas de campo em áreas não mineralizadas.
+
+4. **Calibração de Hiperparâmetros Essencial:** Grid search em learning rate e batch size produziram desempenho ~3 pp superior (84.75% vs. 81.36% com LR subótimas), enfatizando a importância de validação sistemática.
+
+### 7.2 Limitações e Oportunidades de Melhoria
+
+&emsp;&emsp;Reconhecem-se as seguintes restrições que abrem caminhos para trabalhos futuros:
+
+1. **Tamanho do Dataset:** Com N=295, o dataset está no limiar de viabilidade para deep learning profundo. Integração com dados multissensor (Landsat, Sentinel) ou aplicação de semi-supervised learning (DevNet) podem expandir capacidade discriminativa sem requerer rótulos adicionais.
+
+2. **Validação Geológica em Campo:** Os scores de prospectividade foram validados contra rótulos de referência de escritório (dados Frontera Minerals). Campanhas de ground truth em áreas com altas previsões positivas seriam essenciais para conversão de modelo de pesquisa para operacional.
+
+3. **Generalização Espacial:** Todos os testes foram conduzidos em validação aleatória (estratificada). Futuro trabalho deve avaliar transferência de modelo para regiões geográficas não vistas durante treinamento, aspecto crucial para ferramentas de exploração territorial.
+
+4. **Interpretabilidade:** Embora o modelo tenha sido validado globalmente, análises de atribuição por feature (Grad-CAM, SHAP) e visualização de filtros convolucionais aprendidos forneceriam insights geológicos para caracterizar que tipos de padrões espectrais-espaciais o modelo associa a mineralizações REE.
+
+### 7.3 Direções Futuras
+
+&emsp;&emsp;O pipeline SpectraAI estabelece fundações para as seguintes vertentes de pesquisa e desenvolvimento:
+
+1. **Arquiteturas Avançadas:** Investigação de redes residuais (ResNet), modelos atencionales (Transformer) e fusion de múltiplas escalas para capturar estruturas multi-escala em cenas ASTER.
+
+2. **Integração Multi-sensorial:** Combinar ASTER (9 bandas, 15/30 m) com dados Landsat-8 (11 bandas, 30 m) ou suborbitais de sensores hiperespect rails para aumentar cobertura espectral e resolução.
+
+3. **Semi-supervised e Active Learning:** Reduzir dependência de rótulos manuais mediante estratégias semi-supervisionadas ou ativas, permitindo incorporação de áreas onde prospectividade foi computada mas ainda não validada.
+
+4. **Ranqueamento e Priorização:** Estender modelo para produzir *ranking contínuo* de prospectividade ao invés de classificação binária, fornecendo scores que permitam priorização rígida de alvos por investimento operacional.
+
+5. **Validação Operacional:** Estruturar protocolo de validação em campo em parceria com Frontera Minerals para transformar modelo experimental em ferramenta de apoio à decisão.
+
+### 7.4 Conclusão Final
+
+&emsp;&emsp;Os resultados apresentados demonstram que a convergência entre ciência de dados reprodutível, engenharia de features geoespaciais rigorosa e aprendizado profundo adaptado (transfer learning) oferece caminho viável e promissor para automação e escalabilidade em prospeccção mineral de terras raras. O modelo MobileNetV2 adaptado espectralmente alcançou acurácia 84.75% e ROC-AUC 0.9312, superando alternativas tabulares e CNN simples em um dataset realista de 295 chips multiespectrais ASTER. Embora oportunidades de melhoria e validação operacional permaneçam, o pipeline demonstra que sensoriamento remoto combinado com inteligência artificial oferece potencial transformativo para reduzir custos, acelerar identificação de alvos e apoiar decisões de investimento em exploração mineral de elementos críticos.
+
+## 8. Referências
 
 **ABRAMS, M.; YAMAGUCHI, Y.** Twenty Years of ASTER Contributions to Lithologic Mapping and Mineral Exploration. *Remote Sensing*, v. 11, n. 11, art. 1394, 2019. DOI: 10.3390/rs11111394. Disponível em: [https://doi.org/10.3390/rs11111394](https://doi.org/10.3390/rs11111394). Acesso em: 22 fev. 2026.
 
