@@ -1,9 +1,19 @@
 {
   "modelo": "Transfer Learning (A08)",
-  "acuracia_teste": "0.6102",
-  "confianca_media_corretas": "0.7835",
-  "confianca_media_incorretas": "0.7360",
+  "threshold_f1_validacao": 0.1345,
+  "acuracia_threshold_05": 0.6102,
+  "acuracia_threshold_f1": 0.5254,
+  "roc_auc_teste": 0.6848,
+  "pr_auc_teste": 0.5657,
+  "confianca_media_corretas_threshold_05": 0.7835,
+  "confianca_media_incorretas_threshold_05": 0.736,
+  "confianca_media_corretas_threshold_f1": 0.4775,
+  "confianca_media_incorretas_threshold_f1": 0.3044,
   "total_amostras_teste": 59,
-  "corretas": 36,
-  "incorretas": 23
+  "corretas_threshold_05": 36,
+  "incorretas_threshold_05": 23,
+  "corretas_threshold_f1": 31,
+  "incorretas_threshold_f1": 28,
+  "amostras_gradcam": 8,
+  "cobertura_geoespacial": 1.0
 }
