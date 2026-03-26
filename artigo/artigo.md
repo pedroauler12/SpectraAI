@@ -262,7 +262,7 @@ Tabela 2 – Síntese comparativa dos trabalhos relacionados
 | Modelo | **Accurácia** | **F1-Score** | **Acurácia Balanceada** | **ROC-AUC** | **PR-AUC** | **Parâmetros** | **Épocas** |
 |--------|--------------|-------------|------------------------|-----------|---------|--------------:|--------:|
 | **A03 — MLP Baseline** | 79.66% | 0.7391 | 0.786 | 0.8575 | 0.8221 | ~60K | 100+ |
-| **A06 — CNN Simples** | 82.44% | 0.7878 | 0.8265 | 0.9011 | 0.8707 | ~8.4M | 50 |
+| **A06 — CNN (melhor ablação, 64×64)** | 82.44% | 0.7878 | 0.8265 | 0.9011 | 0.8707 | ~8.4M | 50 |
 | **A08 — Transfer Learning (MobileNetV2)** | **84.75%** | **0.8085** | 0.8436 | **0.9312** | — | ~2.3M | 12 |
 
 **Fonte:** Métricas extraídas de `outputs/a03_mlp_baseline/` (MLP), `outputs/a06_avaliacao_experimental/` (CNN ablação), e `outputs/a08_transfer_learning/grid_search_summary.json` (Transfer Learning).
@@ -281,18 +281,22 @@ Tabela 2 – Síntese comparativa dos trabalhos relacionados
 
 #### 5.1.2 Rede Neural Convolucional (CNN) Simples — Visão Computacional
 
-&emsp;&emsp;A arquitetura CNN baseline foi treinada como arquitetura de referência para captura de características espaciais-espectrais diretas dos chips 128×128×9. Submetida a um protocolo de ablação sistemático envolvendo 6 variantes (modificações de input, depth, regularização e learning rates), o resultado mais promissor foi conseguido pela configuração de redução de input para 64×64:
+&emsp;&emsp;A arquitetura CNN baseline foi treinada como arquitetura de referência para captura de características espaciais-espectrais diretas dos chips 128×128×9, sendo posteriormente submetida a um protocolo de ablação sistemático envolvendo 6 variantes (modificações de input, depth, regularização e learning rates), detalhado na Seção 5.2.
+
+&emsp;&emsp;A configuração baseline (128×128×9) alcançou os seguintes resultados em validação:
 
 - **Acurácia de Validação (Melhor Época):** 89.83% (época 35)
-- **Acurácia em Validação (Final):** 82.44%
-- **F1-score Ponderado:** 0.7878
-- **Acurácia Balanceada:** 0.8265
-- **ROC-AUC:** 0.9011
-- **PR-AUC:** 0.8707
+- **Acurácia em Validação (Final):** 83.05%
+- **F1-score Ponderado:** 0.8341
+- **Acurácia Balanceada:** 0.8578
+- **ROC-AUC:** 0.7155
+- **PR-AUC:** 0.5461
 - **Matriz de Confusão (Validação):** TP=20, FP=9, TN=29, FN=1
 - **Épocas Treinadas:** 50 (com overfitting gap de 13.56%)
 
-&emsp;&emsp;O salto de ~3% em acurácia em relação ao MLP (79.66% → 82.44%) é atribuído à capacidade da CNN de preservar relações espaciais locais e generar características de textura automaticamente. O modelo demonstrou qualidade discriminativa significativa (ROC-AUC=0.9011), indicando que filtros convolucionais conseguem isolar padrões espectrais relevantes para prospeccção. Contudo, a presença de overfitting moderado (gap de 13.56% entre acurácia de treinamento 99.66% no final da época 50 e validação 82.44%) e o grande número de parâmetros (8.4M) sugerem limitações quando extrapoladas para dados geoespaciais onde cobertura e generalização são críticas.
+&emsp;&emsp;Embora o baseline tenha alcançado acurácia e F1 competitivos, o ROC-AUC de 0.7155 indica limitação na calibração de probabilidades — aspecto crítico para aplicações de ranking prospectivo. O estudo de ablação (Seção 5.2) identificou que a redução da resolução de entrada para 64×64 pixels melhorou significativamente a generalização, alcançando ROC-AUC de 0.9011 com F1-score de 0.7878 e acurácia de 82.44%. Essas métricas, correspondentes à melhor configuração de CNN identificada pela ablação, são utilizadas na Tabela 3 para comparação entre modelos.
+
+&emsp;&emsp;O ganho em acurácia da CNN baseline em relação ao MLP (79.66% → 83.05%) é atribuído à capacidade da CNN de preservar relações espaciais locais e gerar características de textura automaticamente. Contudo, a presença de overfitting moderado (gap de 13.56% entre acurácia de treinamento de 96.61% e validação de 83.05% ao final da época 50) e o grande número de parâmetros (8.4M) sugerem limitações em cenários onde cobertura e generalização são críticas.
 
 #### 5.1.3 Transfer Learning com MobileNetV2 — Melhor Desempenho Global
 
@@ -302,7 +306,7 @@ Tabela 2 – Síntese comparativa dos trabalhos relacionados
 - **F1-score:** 0.8085 (+0.0694 vs. MLP, +0.0207 vs. CNN)
 - **Acurácia Balanceada:** 0.8436
 - **ROC-AUC:** 0.9312 (+0.0737 pp vs. MLP, +0.0301 pp vs. CNN)
-- **Matriz de Confusão (Teste):** TP=19, FP=4, TN=34, FN=2
+- **Matriz de Confusão (Teste):** TP=19, FP=5, TN=31, FN=4
 - **Parâmetros Treináveis:** ~2.3M (redução de 72% vs. CNN simples)
 - **Épocas de Treinamento:** 12 (4 head + 8 fine-tuning)
 - **Grid Search:** Testadas 4 configurações (LR∈{1e-4, 1e-5} × BS∈{8, 32})
@@ -378,7 +382,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 | LR | BS | **Test Acc** | **Test F1** | **Test ROC-AUC** | **Val Acc** | **Épocas** | **Selecionado** |
 |---|----|-----------|---------|-------------|-----------|----------|---|
-| **1e-4** | **8** | **0.8475** | **0.8085** | **0.9312** | 0.8559 | 12 | Selecionado |
+| **1e-4** | **8** | **0.8475** | **0.8085** | **0.9312** | 0.7966 | 12 | Selecionado |
 | 1e-4 | 32 | 0.7119 | 0.4848 | 0.8684 | 0.7458 | 9 | — |
 | 1e-5 | 8 | 0.6102 | 0.0800 | 0.7899 | 0.5932 | 10 | — |
 | 1e-5 | 32 | 0.8136 | 0.7317 | 0.8889 | 0.7627 | 12 | — |
@@ -396,7 +400,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 &emsp;&emsp;A Figura 5 compara as matrizes de confusão dos três modelos em seus conjuntos de validação/teste. As matrizes normalizadas revelam a proporção de erros em cada classe, permitindo identificar vieses de classificação:
 
 ![Figura 5a: Matrizes de Confusão Normalizadas - MLP vs CNN vs Transfer Learning](../outputs/a09_interpretabilidade_visualizacao/confusion_matrix_threshold_f1.png)
-*Figura 5a. Matrizes de confusão normalizadas (escala 0-1) para os três modelos no threshold de máximo F1. O Transfer Learning apresenta concentração mais forte na diagonal principal, com TP=19, FN=2, TN=34, FP=4. Source: outputs/a09_interpretabilidade_visualizacao/confusion_matrix_threshold_f1.png*
+*Figura 5a. Matrizes de confusão normalizadas (escala 0-1) para os três modelos no threshold de máximo F1. O Transfer Learning apresenta concentração mais forte na diagonal principal, com TP=19, FN=4, TN=31, FP=5. Source: outputs/a09_interpretabilidade_visualizacao/confusion_matrix_threshold_f1.png*
 
 ![Figura 5b: Distribuição de Probabilidades e Confiança](../outputs/a09_interpretabilidade_visualizacao/probability_distributions.png)
 *Figura 5b. Histogramas de scores de predição para classe positiva (minerais raros) no conjunto de teste. O Transfer Learning apresenta separação nítida entre picos (~0.2 para negativos, ~0.85 para positivos), indicando predições mais confiantes e calibradas. Source: outputs/a09_interpretabilidade_visualizacao/probability_distributions.png*
@@ -407,22 +411,25 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 **Análise Qualitativa por Modelo:**
 
 **MLP (PCA 2-D):**
-- **TP=6, FN=13** (sensibilidade=31.6%) — Baixa detecção de mineralizações REE; muitas oportunidades perdidas
-- **TN=36, FP=2** (especificidade=94.7%) — Alta precisão em rejeitar negativos, mas conservadora
-- **Matriz característica:** Concentração em canto inferior-direito (prediz principalmente "negativo")
-- **Implicação operacional:** Modelo recusaria explorar muitas áreas potencialmente mineralizadas
+- **TP=17, FN=6** (sensibilidade=73.9%) — Detecção moderada de mineralizações REE; algumas oportunidades perdidas
+- **TN=30, FP=6** (especificidade=83.3%) — Boa precisão em rejeitar negativos
+- **Matriz característica:** Perfil de erros balanceado entre falsos positivos e falsos negativos
+- **Implicação operacional:** Modelo apresenta equilíbrio entre detecção e rejeição, com erros distribuídos
 
-**CNN Simples (128×128×9):**
-- **TP=17, FN=4** (sensibilidade=81.0%) — Melhoria significativa em detecção
+**CNN Baseline (128×128×9):**
+
+*Nota: A matriz de confusão abaixo corresponde à configuração baseline (128×128), avaliada no conjunto de validação. As métricas comparativas da Tabela 3 referem-se à melhor configuração de ablação (64×64).*
+
+- **TP=20, FN=1** (sensibilidade=95.2%) — Alta detecção de mineralizações REE
 - **TN=29, FP=9** (especificidade=76.3%) — Aumento de FP: 9 áreas não mineralizadas exploradas
 - **Histograma:** Bimodal menos separado, alguma sobreposição entre classes
-- **Implicação operacional:** Modelo balancea detecção com custo de exploração falsa
+- **Implicação operacional:** Modelo maximiza detecção, com custo de exploração falsa elevado
 
 **Transfer Learning (MobileNetV2):**
-- **TP=19, FN=2** (sensibilidade=90.5%) — Detecção superior; apenas 2 oportunidades perdidas no dataset
-- **TN=34, FP=4** (especificidade=89.5%) — Redução de 55% em FP relativo a CNN (9→4)
+- **TP=19, FN=4** (sensibilidade=82.6%) — Detecção superior; apenas 4 oportunidades perdidas no dataset
+- **TN=31, FP=5** (especificidade=86.1%) — Redução de 44% em FP relativo a CNN (9→5)
 - **Histograma:** Separação bimodal nítida com mínima sobreposição
-- **Implicação operacional:** Ideal para prospecção; alerta sobre 4 áreas "ambíguas" que requerem investigação geológica adicional
+- **Implicação operacional:** Melhor equilíbrio entre detecção e precisão; 5 áreas "ambíguas" requerem investigação geológica adicional
 
 ### 5.6 Grad-CAM e Interpretabilidade — O que o Modelo Aprendeu?
 
@@ -530,7 +537,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 2. **Generalização Robusta com Dataset Limitado:** Apesar de N=295 amostras (tamanho reduzido para deep learning), o MobileNetV2 com adaptação espectral via convolução 1×1 alcançou estado-da-arte em ROC-AUC (0.9312) e F1-score (0.8085), demonstrando viabilidade técnica em cenários de dados geoespaciais operacionais.
 
-3. **Redução Significativa de Falsos Positivos:** A matriz de confusão do Transfer Learning (4 FP vs. 9 FP em CNN) é crítica operacionalmente, reduzindo desperdício de recursos em campanhas de campo em áreas não mineralizadas.
+3. **Redução Significativa de Falsos Positivos:** A matriz de confusão do Transfer Learning (5 FP vs. 9 FP em CNN) é crítica operacionalmente, reduzindo desperdício de recursos em campanhas de campo em áreas não mineralizadas.
 
 4. **Calibração de Hiperparâmetros Essencial:** Grid search em learning rate e batch size produziram desempenho ~3 pp superior (84.75% vs. 81.36% com LR subótimas), enfatizando a importância de validação sistemática.
 
