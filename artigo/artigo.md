@@ -279,7 +279,7 @@ Tabela 4 – Desempenho dos modelos clássicos no conjunto de teste (N=59)
 
 **Fonte:** `outputs/a02_baseline_classico/full_results.json`
 
-**Observação:** O SVM apresenta F1 e acurácia superiores ao MLP (A03), enquanto Random Forest e Regressão Logística exibem ROC-AUC competitivos com a CNN simples (~0,93), evidenciando a força dos atributos espectrais extraídos. O Transfer Learning (Tabela 3) supera todos os baselines em ROC-AUC (0,9312) com menor overfitting.
+**Observação:** O SVM apresenta F1 e acurácia superiores ao MLP (A03), enquanto Random Forest e Regressão Logística exibem ROC-AUC (~0,93) superiores à CNN simples e comparáveis ao Transfer Learning, evidenciando a força dos atributos espectrais extraídos. O Transfer Learning (Tabela 3) supera todos os baselines em ROC-AUC (0,9312) com menor overfitting.
 
 #### 5.1.1 Multi-Layer Perceptron (MLP) — Baseline Tabular
 
@@ -291,7 +291,7 @@ Tabela 4 – Desempenho dos modelos clássicos no conjunto de teste (N=59)
 - **Tempo de Treinamento:** ~5.4 segundos (CPU)
 - **Tempo de Inferência:** ~0.099 segundos (59 amostras de teste)
 
-&emsp;&emsp;O desempenho relativivamente limitado do MLP reflete a natureza do problema: ao descartar informação espacial e submeterse apenas a compressão por PCA (preservando apenas 2 componentes), o modelo não consegue capturar padrões morfológicos e contextuais que caracterimanizam certos tipos de mineralizações. Adicionalmente, o bottleneck de número reduzido de componentes principais reduz a capacidade discriminativa frente aos chips onde a estrutura espacial é crítica.
+&emsp;&emsp;O desempenho relativamente limitado do MLP reflete a natureza do problema: ao descartar informação espacial e submeter-se apenas a compressão por PCA (preservando apenas 2 componentes), o modelo não consegue capturar padrões morfológicos e contextuais que caracterizam certos tipos de mineralizações. Adicionalmente, o bottleneck de número reduzido de componentes principais reduz a capacidade discriminativa frente aos chips onde a estrutura espacial é crítica.
 
 #### 5.1.2 Rede Neural Convolucional (CNN) Simples — Visão Computacional
 
@@ -338,12 +338,12 @@ Tabela 4 – Desempenho dos modelos clássicos no conjunto de teste (N=59)
 
 ### 5.2 Análise de Ablação — Impacto de Decisões Arquiteturais
 
-&emsp;&emsp;O experimento de ablação conduzido em A06 permitiu isolar o impacto de decisões específicas sobre o desempenho da CNN simples. A Tabela 4 resume os cinco variantes testados com N≥2 runs por configuração, ordenados por score composto. A Figura 3 complementa essa análise com visualizações do impacto de overfitting em cada decisão:
+&emsp;&emsp;O experimento de ablação conduzido em A06 permitiu isolar o impacto de decisões específicas sobre o desempenho da CNN simples. A Tabela 5 resume as cinco variantes testadas com N≥2 runs por configuração, ordenadas por score composto. A Figura 3 complementa essa análise com visualizações do impacto de overfitting em cada decisão:
 
 ![Figura 3: Análise de Overfitting na CNN - Variação de Train vs Validação](../outputs/a08_transfer_learning/overfitting_analysis.png)
 *Figura 3. Overfitting Gap por configuração arquitetural. Nota-se que a redução de input (64×64) reduz o gap de 13.56%, enquanto dropout excessivo o aumenta. Source: outputs/a08_transfer_learning/overfitting_analysis.png*
 
-Tabela 4 – Análise de Ablação: Impacto de Variações Arquiteturais (CNN)
+Tabela 5 – Análise de Ablação: Impacto de Variações Arquiteturais (CNN)
 
 | Configuração | **Val Acc** | **Val F1** | **Val BA** | **ROC-AUC** | **Score Composto** | **N Runs** | **Insight** |
 |-----|-----------|----------|------|----------|-----------------|--------|-----------|
@@ -355,7 +355,7 @@ Tabela 4 – Análise de Ablação: Impacto de Variações Arquiteturais (CNN)
 
 **Observações-Chave:**
 
-1. **Resolução Espacial (64×64 vs. 128×128):** A redução de entrada melhorou generalizalização ao reduzir dimensionalidade enquanto preserva informação discriminativa, sugerindo que a concentração de texturas tem maior impacto do que detalhes sub-pixel.
+1. **Resolução Espacial (64×64 vs. 128×128):** A redução de entrada melhorou generalização ao reduzir dimensionalidade enquanto preserva informação discriminativa, sugerindo que a concentração de texturas tem maior impacto do que detalhes sub-pixel.
 
 2. **Impacto de Camadas Convolucionais:** A remoção de Conv2D sem substituição (comparação "Sem Conv2D") causou colapso dramático em ROC-AUC (0.7083), confirmando que extração automática de características espaciais é essencial.
 
@@ -390,9 +390,9 @@ Tabela 4 – Análise de Ablação: Impacto de Variações Arquiteturais (CNN)
 ![Figura 5c: Sensibilidade de Hiperparâmetros](../outputs/a08_transfer_learning/tl_sensitivity_analysis.png)
 *Figura 5c. Análise de sensibilidade mostrando como pequenas variações em LR causam queda de até 3-4 pp em acurácia, confirmando importância de ajuste fino. Source: outputs/a08_transfer_learning/tl_sensitivity_analysis.png*
 
-&emsp;&emsp;Foram testadas 4 combinações principal:
+&emsp;&emsp;Foram testadas 4 combinações principais:
 
-Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase Fine-Tuning)
+Tabela 6 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase Fine-Tuning)
 
 | LR | BS | **Test Acc** | **Test F1** | **Test ROC-AUC** | **Val Acc** | **Épocas** | **Selecionado** |
 |---|----|-----------|---------|-------------|-----------|----------|---|
@@ -568,7 +568,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 ## 7. Conclusão
 
-&emsp;&emsp;Este trabalho apresentou um pipeline integrado de ciência de dados e visão computacional para prospeccção de Elementos de Terras Raras a partir de imagens multiespectrais ASTER, demonstrando que a incorporação de informação espacial via redes neurais convolucionais e transfer learning oferece ganhos significativos sobre abordagens tabulares clássicas.
+&emsp;&emsp;Este trabalho apresentou um pipeline integrado de ciência de dados e visão computacional para prospecção de Elementos de Terras Raras a partir de imagens multiespectrais ASTER, demonstrando que a incorporação de informação espacial via redes neurais convolucionais e transfer learning oferece ganhos significativos sobre abordagens tabulares clássicas.
 
 ### 7.1 Principais Achados
 
@@ -598,9 +598,9 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 &emsp;&emsp;O pipeline SpectraAI estabelece fundações para as seguintes vertentes de pesquisa e desenvolvimento:
 
-1. **Arquiteturas Avançadas:** Investigação de redes residuais (ResNet), modelos atencionales (Transformer) e fusion de múltiplas escalas para capturar estruturas multi-escala em cenas ASTER.
+1. **Arquiteturas Avançadas:** Investigação de redes residuais (ResNet), modelos atencionais (Transformer) e fusão de múltiplas escalas para capturar estruturas multi-escala em cenas ASTER.
 
-2. **Integração Multi-sensorial:** Combinar ASTER (9 bandas, 15/30 m) com dados Landsat-8 (11 bandas, 30 m) ou suborbitais de sensores hiperespect rails para aumentar cobertura espectral e resolução.
+2. **Integração Multi-sensorial:** Combinar ASTER (9 bandas, 15/30 m) com dados Landsat-8 (11 bandas, 30 m) ou suborbitais de sensores hiperespectrais para aumentar cobertura espectral e resolução.
 
 3. **Semi-supervised e Active Learning:** Reduzir dependência de rótulos manuais mediante estratégias semi-supervisionadas ou ativas, permitindo incorporação de áreas onde prospectividade foi computada mas ainda não validada.
 
@@ -610,7 +610,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 ### 7.4 Conclusão Final
 
-&emsp;&emsp;Os resultados apresentados demonstram que a convergência entre ciência de dados reprodutível, engenharia de features geoespaciais rigorosa e aprendizado profundo adaptado (transfer learning) oferece caminho viável e promissor para automação e escalabilidade em prospeccção mineral de terras raras. O modelo MobileNetV2 adaptado espectralmente alcançou acurácia 84.75% e ROC-AUC 0.9312, superando alternativas tabulares e CNN simples em um dataset realista de 295 chips multiespectrais ASTER. Embora oportunidades de melhoria e validação operacional permaneçam, o pipeline demonstra que sensoriamento remoto combinado com inteligência artificial oferece potencial transformativo para reduzir custos, acelerar identificação de alvos e apoiar decisões de investimento em exploração mineral de elementos críticos.
+&emsp;&emsp;Os resultados apresentados demonstram que a convergência entre ciência de dados reprodutível, engenharia de features geoespaciais rigorosa e aprendizado profundo adaptado (transfer learning) oferece caminho viável e promissor para automação e escalabilidade em prospecção mineral de terras raras. O modelo MobileNetV2 adaptado espectralmente alcançou acurácia 84.75% e ROC-AUC 0.9312, superando alternativas tabulares e CNN simples em um dataset realista de 295 chips multiespectrais ASTER. Embora oportunidades de melhoria e validação operacional permaneçam, o pipeline demonstra que sensoriamento remoto combinado com inteligência artificial oferece potencial transformativo para reduzir custos, acelerar identificação de alvos e apoiar decisões de investimento em exploração mineral de elementos críticos.
 
 ## 8. Referências
 
