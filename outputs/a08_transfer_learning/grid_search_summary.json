@@ -22,9 +22,9 @@
   "best_config": {
     "learning_rate": 0.0001,
     "batch_size": 8,
-    "test_accuracy": 0.8475,
-    "test_f1": 0.8085,
-    "test_roc_auc": 0.9312
+    "test_accuracy": 0.9153,
+    "test_f1": 0.8889,
+    "test_roc_auc": 0.9088
   },
   "all_results": [
     {
@@ -34,15 +34,15 @@
       "head_epochs": 4,
       "ft_epochs": 8,
       "total_epochs": 12,
-      "best_epoch": 12,
-      "best_val_loss": 0.4974,
-      "best_val_accuracy": 0.7966,
-      "test_accuracy": 0.8475,
-      "test_balanced_acc": 0.8436,
-      "test_f1": 0.8085,
-      "test_precision": 0.7917,
-      "test_recall": 0.8261,
-      "test_roc_auc": 0.9312
+      "best_epoch": 9,
+      "best_val_loss": 0.4953,
+      "best_val_accuracy": 0.8305,
+      "test_accuracy": 0.9153,
+      "test_balanced_acc": 0.907,
+      "test_f1": 0.8889,
+      "test_precision": 0.9091,
+      "test_recall": 0.8696,
+      "test_roc_auc": 0.9088
     },
     {
       "learning_rate": 0.0001,
@@ -52,14 +52,14 @@
       "ft_epochs": 5,
       "total_epochs": 9,
       "best_epoch": 5,
-      "best_val_loss": 0.554,
+      "best_val_loss": 0.5543,
       "best_val_accuracy": 0.7458,
       "test_accuracy": 0.7119,
       "test_balanced_acc": 0.6461,
       "test_f1": 0.4848,
       "test_precision": 0.8,
       "test_recall": 0.3478,
-      "test_roc_auc": 0.8684
+      "test_roc_auc": 0.8774
     },
     {
       "learning_rate": 1e-05,
@@ -69,14 +69,14 @@
       "ft_epochs": 6,
       "total_epochs": 10,
       "best_epoch": 2,
-      "best_val_loss": 0.7288,
+      "best_val_loss": 0.7289,
       "best_val_accuracy": 0.5932,
-      "test_accuracy": 0.6102,
-      "test_balanced_acc": 0.5079,
-      "test_f1": 0.08,
-      "test_precision": 0.5,
-      "test_recall": 0.0435,
-      "test_roc_auc": 0.7899
+      "test_accuracy": 0.5932,
+      "test_balanced_acc": 0.4861,
+      "test_f1": 0.0,
+      "test_precision": 0.0,
+      "test_recall": 0.0,
+      "test_roc_auc": 0.7868
     },
     {
       "learning_rate": 1e-05,
@@ -93,7 +93,7 @@
       "test_f1": 0.7317,
       "test_precision": 0.8333,
       "test_recall": 0.6522,
-      "test_roc_auc": 0.8889
+      "test_roc_auc": 0.8992
     }
   ]
 }
