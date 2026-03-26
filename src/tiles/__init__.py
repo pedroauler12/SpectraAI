@@ -13,7 +13,12 @@ from .earthaccess_utils import (
     read_points,
 )
 from .multiband import crop_and_stack_multiband, list_band_tifs, summarize_tif
-from .pipeline import process_one_point, run
+
+try:
+    from .pipeline import process_one_point, run
+except ImportError:  # pragma: no cover - earthaccess pode nao estar disponivel
+    process_one_point = None
+    run = None
 
 __all__ = [
     "Config",
