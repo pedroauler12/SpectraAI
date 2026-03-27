@@ -1,5 +1,6 @@
 numpy
 pandas
+openpyxl
 rasterio
 pytest
 pytest-cov
@@ -9,3 +10,6 @@ scikit-learn
 pyproj
 earthaccess
 tensorflow
+streamlit
+folium
+streamlit-folium

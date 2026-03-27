@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import earthaccess
 import pandas as pd
 
 from .config import Config
@@ -16,6 +15,8 @@ def login_earthdata(netrc_path: str) -> None:
     Faz login via .netrc. No Colab, aponte para um arquivo no Drive.
     Ex: /content/drive/MyDrive/Aster/.netrc
     """
+    import earthaccess
+
     os.environ.setdefault("NETRC", netrc_path)
     earthaccess.login(strategy="netrc")
 
@@ -107,6 +108,8 @@ def choose_best_granule(granules: List[Any]) -> Optional[Any]:
 
 
 def download_granule(granule: Any, outdir: Path, dry_run: bool) -> None:
+    import earthaccess
+
     if dry_run:
         print(f"  [DRY_RUN] download -> {outdir}")
         return
