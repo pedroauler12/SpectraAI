@@ -1,6 +1,9 @@
 # Baseline CNN configuration
 # Input: 128x128x9 (ASTER multispectral)
 
+# ── Reprodutibilidade ────────────────────────────────────────────────────────
+seed: 42
+
 model:
   input_shape: [128, 128, 9]
   num_classes: 2
@@ -32,7 +35,8 @@ data:
   normalization_method: zscore
 
 output:
-  models_dir: outputs/trained_models/
-  logs_dir: outputs/training_logs/
+  models_dir:      outputs/trained_models/
+  logs_dir:        outputs/training_logs/
+  predictions_dir: outputs/predictions/
   save_model: true
   save_history: true

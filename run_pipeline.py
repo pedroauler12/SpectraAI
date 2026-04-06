@@ -33,7 +33,6 @@ if str(ROOT) not in sys.path:
 
 # ─── Constantes ──────────────────────────────────────────────────────────────
 
-PREDICTIONS_DIR = ROOT / "outputs" / "predictions"
 DEFAULT_CONFIG = "baseline"
 DEFAULT_STAGES = ["train", "infer"]
 
@@ -147,10 +146,18 @@ def stage_infer(args: argparse.Namespace, runner=None, result: dict = None) -> d
         return_proba=True,
     )
 
-    # Salvar CSV de predições
-    PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    # Resolver diretório de predições a partir do config (sem hardcode)
+    if runner is not None:
+        pred_dir_str = runner.config.get("output", {}).get("predictions_dir", "outputs/predictions")
+    else:
+        from src.models.cnn_config import load_config as _load_config
+        _cfg = _load_config(args.config)
+        pred_dir_str = _cfg.get("output", {}).get("predictions_dir", "outputs/predictions")
+    predictions_dir = Path(pred_dir_str) if Path(pred_dir_str).is_absolute() else ROOT / pred_dir_str
+    predictions_dir.mkdir(parents=True, exist_ok=True)
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_path = PREDICTIONS_DIR / f"predictions_{args.config}_{timestamp}.csv"
+    csv_path = predictions_dir / f"predictions_{args.config}_{timestamp}.csv"
     df_preds = infer_results["dataframe"]
 
     if y_true is not None:
@@ -180,10 +187,17 @@ def main() -> None:
     stages = args.stages
     _validate_stages(stages)
 
+    # Carregar config para obter seed antes de qualquer operação aleatória
+    from src.models.cnn_config import load_config as _load_config
+    from src.reprodutibilidade import set_global_seed
+    _cfg = _load_config(args.config)
+    set_global_seed(_cfg.get("seed", 42))
+
     print("\n" + "=" * 60)
     print("SPECTRA — PIPELINE E2E (A11)")
     print("=" * 60)
     print(f"  Config:    {args.config}")
+    print(f"  Seed:      {_cfg.get('seed', 42)}")
     print(f"  Etapas:    {' → '.join(stages)}")
     if args.limit:
         print(f"  Limite:    {args.limit} amostras")

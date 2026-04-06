@@ -81,7 +81,7 @@ class ExperimentRunner:
         # Carregar dataset
         df = pd.read_csv(data_cfg["dataset_path"])
         if limit_samples:
-            df = df.sample(n=limit_samples, random_state=42)
+            df = df.sample(n=limit_samples, random_state=self.config.get("seed", 42))
         
         # Carregar labels
         with open(data_cfg["codes_path"]) as f:
@@ -202,7 +202,7 @@ class ExperimentRunner:
         
         # Fazer split manual para ter acesso ao conjunto de validação
         val_size = int(len(X_train) * val_split)
-        indices = np.random.RandomState(42).permutation(len(X_train))
+        indices = np.random.RandomState(self.config.get("seed", 42)).permutation(len(X_train))
         val_indices = indices[:val_size]
         train_indices = indices[val_size:]
         
