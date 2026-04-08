@@ -237,7 +237,7 @@ Tabela 3 – Comparação de desempenho entre os três modelos avaliados
 
 **Fonte:** Métricas extraídas de `outputs/a03_mlp_baseline/` (MLP), `outputs/a06_avaliacao_experimental/` (CNN ablação), e `outputs/a08_transfer_learning/grid_search_summary.json` (Transfer Learning).
 
-&emsp;&emsp;A Figura 2 oferece uma visualização em barplot e em radar chart consolidando essas métricas:
+&emsp;&emsp;As Figuras 1 e 2 oferecem uma visualização em barplot e em radar chart consolidando essas métricas:
 
 ![Figura 1: Comparação de Desempenho - Barplot MLP vs CNN vs Transfer Learning](../outputs/a08_transfer_learning/comparacao_modelos_barplot.png)
 *Figura 1. Barplot comparando Acurácia, F1, ROC-AUC entre os três modelos. Source: outputs/a08_transfer_learning/comparacao_modelos_barplot.png*
@@ -302,7 +302,7 @@ Tabela 3 – Comparação de desempenho entre os três modelos avaliados
 
 ### 5.2 Análise de Ablação — Impacto de Decisões Arquiteturais
 
-&emsp;&emsp;O experimento de ablação conduzido em A06 permitiu isolar o impacto de decisões específicas sobre o desempenho da CNN simples. A Tabela 4 resume os cinco variantes testados com N≥2 runs por configuração, ordenados por score composto. A Figura 4 complementa essa análise com visualizações do impacto de overfitting em cada decisão:
+&emsp;&emsp;O experimento de ablação conduzido em A06 permitiu isolar o impacto de decisões específicas sobre o desempenho da CNN simples. A Tabela 4 resume os cinco variantes testados com N≥2 runs por configuração, ordenados por score composto. A Figura 5 complementa essa análise com visualizações do impacto de overfitting em cada decisão:
 
 ![Figura 5: Análise de Overfitting na CNN - Variação de Train vs Validação](../outputs/a08_transfer_learning/overfitting_analysis.png)
 *Figura 5. Overfitting Gap por configuração arquitetural. Nota-se que a redução de input (64×64) reduz o gap de 13.56%, enquanto dropout excessivo o aumenta. Source: outputs/a08_transfer_learning/overfitting_analysis.png*
@@ -327,7 +327,7 @@ Tabela 4 – Análise de Ablação: Impacto de Variações Arquiteturais (CNN)
 
 ### 5.3 Resultados de Data Augmentation — Impacto nas Estratégias de Treinamento
 
-&emsp;&emsp;Na fase de transfer learning (A08), foi explorado sistematicamente o impacto de 7 estratégias de data augmentation na convergência e desempenho do modelo MobileNetV2. As análises de histogramas (Figura 5a, 5b) sintetizam os resultados obtidos:
+&emsp;&emsp;Na fase de transfer learning (A08), foi explorado sistematicamente o impacto de 7 estratégias de data augmentation na convergência e desempenho do modelo MobileNetV2. As análises de histogramas (Figuras 6 e 7) sintetizam os resultados obtidos:
 
 ![Figura 6: Histogramas de Augmentação - Distribuição de Intensidades](../outputs/a08_transfer_learning/augmentation_histograms.png)
 *Figura 6. Histogramas de distribuição de pixel intensities para as 7 estratégias de augmentação. Nota-se maior dispersão na configuração "Intensa", refletindo maior diversidade. Source: outputs/a08_transfer_learning/augmentation_histograms.png*
@@ -343,7 +343,7 @@ Tabela 4 – Análise de Ablação: Impacto de Variações Arquiteturais (CNN)
 
 ### 5.4 Grid Search: Otimização de Hiperparâmetros em Transfer Learning
 
-&emsp;&emsp;No estágio final de otimização (A08), foi conduzido grid search sobre learning rate e batch size durante a fase de fine-tuning parcial do MobileNetV2. Os resultados são visualizados em mapas de calor (Figura 6a–6c) que indicam desempenho em função de LR e BS:
+&emsp;&emsp;No estágio final de otimização (A08), foi conduzido grid search sobre learning rate e batch size durante a fase de fine-tuning parcial do MobileNetV2. Os resultados são visualizados em mapas de calor (Figuras 8, 9 e 10) que indicam desempenho em função de LR e BS:
 
 ![Figura 8: Heatmap Grid Search - Learning Rate vs Batch Size](../outputs/a08_transfer_learning/grid_search_heatmaps.png)
 *Figura 8. Mapa de calor mostrando Test Accuracy para cada combinação (LR, BS). A região vermelha em LR=1e-4, BS=8 indica desempenho ótimo (84.75%). Source: outputs/a08_transfer_learning/grid_search_heatmaps.png*
@@ -375,7 +375,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 ### 5.5 Comparação Qualitativa: Matrizes de Confusão e Análise de Erros
 
-&emsp;&emsp;A Figura 7 compara as matrizes de confusão dos três modelos em seus conjuntos de validação/teste. As matrizes normalizadas revelam a proporção de erros em cada classe, permitindo identificar vieses de classificação:
+&emsp;&emsp;A Figura 11 compara as matrizes de confusão dos três modelos em seus conjuntos de validação/teste. As matrizes normalizadas revelam a proporção de erros em cada classe, permitindo identificar vieses de classificação:
 
 ![Figura 11: Matrizes de Confusão Normalizadas - MLP vs CNN vs Transfer Learning](../outputs/a09_interpretabilidade_visualizacao/confusion_matrix_threshold_f1.png)
 *Figura 11. Matrizes de confusão normalizadas (escala 0-1) para os três modelos no threshold de máximo F1. O Transfer Learning apresenta concentração mais forte na diagonal principal, com TP=19, FN=4, TN=31, FP=5. Source: outputs/a09_interpretabilidade_visualizacao/confusion_matrix_threshold_f1.png*
@@ -411,7 +411,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 ### 5.6 Grad-CAM e Interpretabilidade — O que o Modelo Aprendeu?
 
-&emsp;&emsp;Complementando a avaliação quantitativa, a Figura 8 apresenta mapas de ativação Grad-CAM que visualizam quais regiões e canais espectrais o modelo MobileNetV2 prioriza ao fazer predições. Esse mecanismo de interpretabilidade revela se o modelo aprendeu padrões geológicos significativos:
+&emsp;&emsp;Complementando a avaliação quantitativa, a Figura 14 apresenta mapas de ativação Grad-CAM que visualizam quais regiões e canais espectrais o modelo MobileNetV2 prioriza ao fazer predições. Esse mecanismo de interpretabilidade revela se o modelo aprendeu padrões geológicos significativos:
 
 ![Figura 14: Mapas Grad-CAM Comparativos entre Modelos](../outputs/a09_interpretabilidade_visualizacao/gradcam_comparativo.png)
 *Figura 14. Mapas de ativação Grad-CAM sobreposto a chips ASTER para CNN e Transfer Learning em exemplos positivos selecionados. O Transfer Learning mostra ativação concentrada em transições espectrais coerentes, enquanto CNN simples apresenta padrão mais disperso. Source: outputs/a09_interpretabilidade_visualizacao/gradcam_comparativo.png*
@@ -421,7 +421,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 
 
-**Análise de Erros — Falsos Positivos vs. Verdadeiros Positivos:** A Figura 8c visualiza mapas Grad-CAM para amostras que o modelo classificou incorretamente, revelando ambiguidade geológica:
+**Análise de Erros — Falsos Positivos vs. Verdadeiros Positivos:** A Figura 16 visualiza mapas Grad-CAM para amostras que o modelo classificou incorretamente, revelando ambiguidade geológica:
 
 ![Figura 16: Análise de Grad-CAM em Erros de Classificação](../outputs/a09_interpretabilidade_visualizacao/gradcam_erros.png)
 *Figura 16. Mapas Grad-CAM para 6 exemplos: 3 FP (falsos positivos) e 3 FN (falsos negativos). Falsos Positivos frequentemente ativam regiões com padrões espectrais similares aos da classe positiva, indicando ambiguidade geológica no terreno. Falsos Negativos correspondem a chips marginais com alteração sutil. Source: outputs/a09_interpretabilidade_visualizacao/gradcam_erros.png*
@@ -436,7 +436,7 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 ### 5.7 Análise Espacial — Distribuição de Prospectividade Geográfica
 
-&emsp;&emsp;Além da avaliação por chip individual, a Figura 9 apresenta análises espaciais que mostram a distribuição geográfica de scores de prospectividade do modelo MobileNetV2, oferecendo perspectiva agregada útil para planejamento de exploração:
+&emsp;&emsp;Além da avaliação por chip individual, as Figuras 17, 18 e 19 apresentam análises espaciais que mostram a distribuição geográfica de scores de prospectividade do modelo MobileNetV2, oferecendo perspectiva agregada útil para planejamento de exploração:
 
 ![Figura 17: Mapa Espacial de Probabilidades Preditivas](../outputs/a09_interpretabilidade_visualizacao/spatial_probability_map.png)
 *Figura 17. Mapa hexagonal de densidade de scores de prospectividade (cor: vermelha=alta probabilidade, azul=baixa). Regiões com concentração de altos scores indicam áreas de interesse prioritário. Source: outputs/a09_interpretabilidade_visualizacao/spatial_probability_map.png*
@@ -449,11 +449,11 @@ Tabela 5 – Grid Search: Learning Rate × Batch Size (Transfer Learning, Fase F
 
 **Implicações Operacionais:**
 
-1. **Priorização de Alvos:** Regiões com alta densidade de altos scores (Figura 9a) indicam áreas onde múltiplos chips adjacentes apresentam assinatura espectral consistente com REE, reduzindo risco de falso alerta isolado.
+1. **Priorização de Alvos:** Regiões com alta densidade de altos scores (Figura 17) indicam áreas onde múltiplos chips adjacentes apresentam assinatura espectral consistente com REE, reduzindo risco de falso alerta isolado.
 
-2. **Detecção de Padrões Regionais:** A comparação entre TP e FP geograficamente (Figura 9b) pode revelar se erros concentram-se em províncias geológicas específicas, sugerindo dominância de classes espectrais similares.
+2. **Detecção de Padrões Regionais:** A comparação entre TP e FP geograficamente (Figura 18) pode revelar se erros concentram-se em províncias geológicas específicas, sugerindo dominância de classes espectrais similares.
 
-3. **Calibração Operacional:** Caso exploração de altos clusters (Figura 9c) resulte em maior taxa de confirmação, pode-se ajustar threshold de decisão dinamicamente por região geográfica.
+3. **Calibração Operacional:** Caso exploração de altos clusters (Figura 19) resulte em maior taxa de confirmação, pode-se ajustar threshold de decisão dinamicamente por região geográfica.
 
 ### 5.8 Dinâmica de Treinamento — Convergência e Estabilidade
 
@@ -497,13 +497,13 @@ Tabela 6 – Comparação de Convergência entre Modelos
 
 ## 6. Discussão
 
-&emsp;&emsp;Os experimentos conduzidos neste trabalho viabilizaram uma avaliação sistemática entre abordagens tabulares, redes neurais densas e visão computacional para prospecção de elementos de terras raras. A superioridade do Transfer Learning em métricas de desempenho (acurácia 84.75%, ROC-AUC 0.9312) valida a hipótese de que a preservação de informação espacial via CNN, combinada com conhecimento pré-aprendido de grandes datasets (ImageNet), oferece vantagens significativas para identificação de padrões associados à presença de elementos de terras raras. A estrutura espacial dos chips, aliada à informação espectral distribuída nas diferentes bandas, permite que o modelo aprenda representações discriminativas diretamente a partir dos dados. Dessa forma, a CNN atua como um mecanismo de extração automática de características capaz de capturar relações espaciais e espectrais relevantes, reduzindo a dependência de engenharia manual de atributos.
+&emsp;&emsp;Os experimentos conduzidos neste trabalho viabilizaram uma avaliação sistemática entre abordagens tabulares, redes neurais densas e visão computacional para prospecção de elementos de terras raras. A superioridade do Transfer Learning em métricas de desempenho (acurácia de 88,14%, F1-score de 0,8511 e ROC-AUC de 0,9167 no pipeline final consolidado) valida a hipótese de que a preservação de informação espacial via CNN, combinada com conhecimento pré-aprendido de grandes datasets (ImageNet), oferece vantagens significativas para identificação de padrões associados à presença de elementos de terras raras. A estrutura espacial dos chips, aliada à informação espectral distribuída nas diferentes bandas, permite que o modelo aprenda representações discriminativas diretamente a partir dos dados. Dessa forma, a CNN atua como um mecanismo de extração automática de características capaz de capturar relações espaciais e espectrais relevantes, reduzindo a dependência de engenharia manual de atributos.
 
 &emsp;&emsp;A organização do pipeline experimental buscou consistência metodológica e confiabilidade na avaliação do modelo. A divisão dos dados em conjuntos de treinamento, validação e teste contribui para preservar a distribuição das classes ao longo do processo de modelagem, enquanto o isolamento do conjunto de teste até a etapa final evita vieses na estimativa de desempenho. Nesse contexto, o uso do F1-score e da área sob a curva ROC (ROC-AUC) permite avaliar simultaneamente o equilíbrio entre precisão e recall e a capacidade discriminativa do modelo em diferentes limiares de decisão.
 
 &emsp;&emsp;Os experimentos conduzidos no ablation study oferecem uma análise adicional sobre o impacto de decisões arquiteturais e de hiperparâmetros no comportamento do modelo. A comparação entre diferentes níveis de dropout e valores de learning rate permite observar como mecanismos de regularização influenciam a capacidade de generalização da rede. Em particular, a combinação de penalização L2 nas camadas convolucionais e camadas de dropout atua como um controle sobre a complexidade efetiva do modelo, reduzindo a tendência de memorização de padrões específicos do conjunto de treinamento, o que é especialmente relevante em cenários com dados geoespaciais limitados ou fortemente correlacionados.
 
-&emsp;&emsp;Apesar dos resultados encorajadores, algumas limitações devem ser consideradas. A arquitetura empregada foi intencionalmente simples e utilizada como modelo de referência inicial, o que sugere a possibilidade de melhorias por meio de arquiteturas mais profundas ou estratégias adicionais de regularização e ajuste de hiperparâmetros. Trabalhos futuros podem explorar redes convolucionais mais complexas, diferentes resoluções espaciais dos chips e a integração de atributos geoespaciais derivados. Ainda assim, o pipeline desenvolvido demonstra o potencial do uso de aprendizado profundo aplicado a dados de sensoriamento remoto como ferramenta de apoio à prospecção mineral, permitindo ordenar áreas de interesse com base em escores probabilísticos de potencial prospectivo.
+&emsp;&emsp;Apesar dos resultados encorajadores, algumas limitações devem ser consideradas. O dataset de 295 amostras situa-se no limiar inferior de viabilidade para deep learning, e a validação foi conduzida com rótulos de referência de escritório, sem confirmação de campo para o modelo final. Trabalhos futuros podem explorar arquiteturas mais profundas, integração multissensor e validação geológica in situ. Ainda assim, o pipeline desenvolvido demonstra o potencial do uso de aprendizado profundo aplicado a dados de sensoriamento remoto como ferramenta de apoio à prospecção mineral, permitindo ordenar áreas de interesse com base em escores probabilísticos de potencial prospectivo.
 
 ## 7. Resultados e Evidências Finais
 
