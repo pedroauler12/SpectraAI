@@ -33,7 +33,7 @@ A prospecção de Elementos de Terras Raras (REE) permanece desafiadora do ponto
 
 &emsp;&emsp;Diante disso, este trabalho apresenta uma proposta metodológica para construção de um pipeline de ciência de dados geoespaciais, utilizando imagens ASTER e dados de referência fornecidos pela Frontera Minerals, com o objetivo de transformar as cenas em um conjunto supervisionado de amostras rotuladas e avaliar modelos de aprendizado de máquina e visão computacional para estimar, de forma probabilística, o potencial prospectivo em áreas de interesse. A hipótese central é que a incorporação de informação espacial por meio de representações em forma de chips multiespectrais possa permitir a extração automática de características relevantes, fornecendo uma base mais adequada para modelagem preditiva em tarefas de mapeamento prospectivo de ETR. A proposta privilegia a reprodutibilidade do processamento e a geração de evidências quantitativas que possam apoiar, em ciclos posteriores, validação geológica e refinamento do método.
 
-&emsp;&emsp;As principais contribuições deste trabalho são: (i) a construção de um pipeline reprodutível de ciência de dados geoespaciais, desde a aquisição e rotulagem de cenas ASTER até a geração de chips multiespectrais supervisionados; (ii) a comparação sistemática entre modelos tabulares (baselines clássicos e MLP) e abordagens de visão computacional (CNN) para classificação de potencial prospectivo; e (iii) a avaliação do impacto de decisões arquiteturais e de regularização por meio de um estudo de ablação controlado.
+&emsp;&emsp;As principais contribuições deste trabalho são: (i) a construção de um pipeline reprodutível de ciência de dados geoespaciais, desde a aquisição e rotulagem de cenas ASTER até a geração de chips multiespectrais supervisionados; (ii) a comparação sistemática entre modelos tabulares (baselines clássicos e MLP), redes neurais convolucionais (CNN) e transfer learning com MobileNetV2 (SANDLER et al., 2018) para classificação de potencial prospectivo; (iii) a avaliação do impacto de decisões arquiteturais e de regularização por meio de um estudo de ablação controlado; e (iv) a consolidação de um pipeline end-to-end integrado e reprodutível com análise de interpretabilidade via Grad-CAM.
 
 ### 1.1 Objetivos da Pesquisa
 
@@ -84,7 +84,7 @@ A base de dados do projeto é composta por amostras de solo e rocha coletadas *i
 * **Classe Positiva (y = 1):** Áreas com teores acima do *cut-off* econômico, associadas a depósitos iônicos ou rochas alcalinas mineralizadas.
 * **Classe Negativa (y = 0):** Áreas estéreis ou com teores de base (*background*).
 
-As assinaturas espectrais foram extraídas de imagens do sensor **ASTER**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR). Devido à degradação do sensor SWIR após 2008, o pipeline prioriza cenas históricas (2000-2007) com cobertura de nuvens inferior a 20% (conforme documentado no protocolo de acesso ASTER), garantindo a integridade dos dados para mapeamento de argilas.
+As assinaturas espectrais foram extraídas de imagens do sensor **ASTER**, utilizando as bandas do visível e infravermelho (VNIR) e infravermelho de ondas curtas (SWIR). Devido à degradação do sensor SWIR após 2008, o pipeline prioriza cenas históricas (2000-2007) com cobertura de nuvens inferior a 20% (NASA, [s.d.]), garantindo a integridade dos dados para mapeamento de argilas.
 
 #### 3.2.2. Pré-processamento e Engenharia de Atributos
 
@@ -660,7 +660,7 @@ Tabela 9 – Síntese integrada das evidências finais e sua contribuição para
 
 **LUO, Z. et al.** An explainable semi-supervised deep learning framework for mineral prospectivity mapping: DEEP-SEAM v1.0. *EGUsphere* (preprint), 2025. DOI: 10.5194/egusphere-2025-3283. Disponível em: [https://doi.org/10.5194/egusphere-2025-3283](https://doi.org/10.5194/egusphere-2025-3283). Acesso em: 23 fev. 2026.
 
-**NATIONAL AERONAUTICS AND SPACE ADMINISTRATION (NASA).** ASTER L2 Surface Reflectance VNIR and Crosstalk-Corrected SWIR (AST_07XT) — Product Description. *NASA Earthdata*, s.d. Disponível em: [https://earthdata.nasa.gov/](https://earthdata.nasa.gov/). Acesso em: 26 fev. 2026.
+**NATIONAL AERONAUTICS AND SPACE ADMINISTRATION (NASA).** ASTER L2 Surface Reflectance VNIR and Crosstalk-Corrected SWIR (AST_07XT) — Product Description. *NASA Earthdata*, [s.d.]. Disponível em: [https://earthdata.nasa.gov/](https://earthdata.nasa.gov/). Acesso em: 26 fev. 2026.
 
 **RAMSEY, M. S.; FLYNN, I. T. W.** The Spatial and Spectral Resolution of ASTER Infrared Image Data: A Paradigm Shift in Volcanological Remote Sensing. *Remote Sensing*, v. 12, n. 4, art. 738, 2020. DOI: 10.3390/rs12040738. Disponível em: [https://doi.org/10.3390/rs12040738](https://doi.org/10.3390/rs12040738). Acesso em: 26 fev. 2026.
 
