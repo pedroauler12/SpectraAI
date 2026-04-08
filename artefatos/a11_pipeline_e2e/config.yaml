@@ -1,47 +1,50 @@
 # Configuracoes oficiais do A11.
 # Todos os caminhos relativos sao resolvidos a partir deste arquivo.
+# Execute sempre a partir da raiz do repositorio (onde a pasta artefatos/ esta visivel).
 
+# Semente global para reprodutibilidade (numpy, tensorflow, python random)
 seed: 42
 
 paths:
-  dataset_csv: ../../data/pixels_dataset.csv
-  extracted_codes_json: ../../data/extracted_codes.json
-  outputs_metrics: outputs/metrics
-  outputs_models: outputs/models
-  outputs_viz: outputs/visualizations
-  outputs_preds: outputs/predictions
+  # Caminhos relativos ao diretorio deste arquivo (artefatos/a11_pipeline_e2e/)
+  dataset_csv: ../../data/pixels_dataset.csv            # dataset multispectral ASTER (137 MB)
+  extracted_codes_json: ../../data/extracted_codes.json # rotulos binarios de prospeccao
+  outputs_metrics: outputs/metrics                      # metricas em JSON e CSV
+  outputs_models: outputs/models                        # modelo treinado e historico
+  outputs_viz: outputs/visualizations                   # graficos gerados automaticamente
+  outputs_preds: outputs/predictions                    # predicoes do conjunto de teste
 
 data:
-  image_size: [128, 128]
-  num_bands: 9
-  normalization_method: zscore
-  test_size: 0.2
-  val_size: 0.2
+  image_size: [128, 128]        # resolucao espacial dos patches ASTER em pixels (altura x largura)
+  num_bands: 9                  # numero de bandas multiespectrais do sensor ASTER
+  normalization_method: zscore  # zscore: normaliza por banda (media=0, desvio-padrao=1)
+  test_size: 0.2                # 20% dos dados reservados para avaliacao final (nao vistos no treino)
+  val_size: 0.2                 # 20% do treino usado para validacao durante o treinamento
 
 model:
-  base_config_name: tl_baseline
-  backbone: mobilenetv2
-  num_classes: 2
-  resize_to: [160, 160]
-  dropout_rate: 0.25
-  fine_tune_last_layers: 20
+  base_config_name: tl_baseline  # nome do experimento (usado para nomear artefatos salvos)
+  backbone: mobilenetv2           # rede pre-treinada usada como extrator de features (ImageNet)
+  num_classes: 2                  # classificacao binaria: positivo / negativo para terras raras
+  resize_to: [160, 160]           # resolucao esperada pelo MobileNetV2 (patches sao redimensionados)
+  dropout_rate: 0.25              # dropout antes da camada de classificacao (regularizacao)
+  fine_tune_last_layers: 20       # camadas finais do backbone descongeladas na fase 2 de treinamento
 
 training:
-  batch_size: 8
-  head_epochs: 6
-  head_learning_rate: 1.0e-4
-  fine_tune_epochs: 12
-  fine_tune_learning_rate: 1.0e-5
-  early_stopping_patience_head: 3
-  early_stopping_patience_ft: 4
+  batch_size: 8                    # tamanho do batch (menor = mais atualizacoes por epoca)
+  head_epochs: 6                   # epocas maximas da fase 1 (somente a cabeca e treinada)
+  head_learning_rate: 1.0e-4       # lr da fase 1 (maior, backbone congelado)
+  fine_tune_epochs: 12             # epocas maximas da fase 2 (backbone parcialmente descongelado)
+  fine_tune_learning_rate: 1.0e-5  # lr da fase 2 (menor, preserva features pre-treinadas)
+  early_stopping_patience_head: 3  # parada antecipada fase 1 se val_loss nao melhorar em N epocas
+  early_stopping_patience_ft: 4    # parada antecipada fase 2
 
 evaluation:
-  threshold_default: 0.5
+  threshold_default: 0.5  # limiar de decisao: probabilidade >= 0.5 → classe positiva
   metrics:
-    - accuracy
-    - precision
-    - recall
-    - f1
-    - balanced_accuracy
-    - roc_auc
-    - pr_auc
+    - accuracy          # acuracia geral
+    - precision         # precisao da classe positiva
+    - recall            # recall (sensibilidade) da classe positiva
+    - f1                # media harmonica de precisao e recall
+    - balanced_accuracy # acuracia balanceada (robusta a desbalanceamento entre classes)
+    - roc_auc           # area sob a curva ROC (capacidade discriminativa geral)
+    - pr_auc            # area sob a curva Precision-Recall (mais informativa em dados desbalanceados)

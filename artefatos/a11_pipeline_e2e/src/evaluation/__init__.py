@@ -109,3 +109,54 @@ def _save_roc_pr_curves(predictions_df: pd.DataFrame, output_path: Path) -> None
     fig.tight_layout()
     fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
+
+
+def save_training_curves(
+    *,
+    history_path: "Path | None",
+    output_dir: "str | Path",
+) -> None:
+    """Gera e salva o grafico de curvas de aprendizado (loss e accuracy por epoca)."""
+    if history_path is None or not Path(history_path).exists():
+        return
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    _save_training_curves_plot(Path(history_path), output_dir / "training_curves.png")
+
+
+def _save_training_curves_plot(history_path: Path, output_path: Path) -> None:
+    with history_path.open("r", encoding="utf-8") as f:
+        history = json.load(f)
+
+    # Detecta fronteira head/fine-tune pela primeira queda significativa de learning rate
+    lr = history.get("learning_rate", [])
+    head_end = 0
+    for i in range(1, len(lr)):
+        if lr[i] < lr[i - 1] * 0.5:
+            head_end = i
+            break
+
+    epochs = list(range(1, len(history["loss"]) + 1))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+    axes[0].plot(epochs, history["loss"], label="treino")
+    axes[0].plot(epochs, history["val_loss"], label="validacao")
+    if head_end:
+        axes[0].axvline(x=head_end + 0.5, color="gray", linestyle="--", alpha=0.6, label="inicio fine-tune")
+    axes[0].set_title("Loss por Epoca")
+    axes[0].set_xlabel("Epoca")
+    axes[0].set_ylabel("Loss")
+    axes[0].legend()
+
+    axes[1].plot(epochs, history["accuracy"], label="treino")
+    axes[1].plot(epochs, history["val_accuracy"], label="validacao")
+    if head_end:
+        axes[1].axvline(x=head_end + 0.5, color="gray", linestyle="--", alpha=0.6, label="inicio fine-tune")
+    axes[1].set_title("Acuracia por Epoca")
+    axes[1].set_xlabel("Epoca")
+    axes[1].set_ylabel("Acuracia")
+    axes[1].legend()
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)

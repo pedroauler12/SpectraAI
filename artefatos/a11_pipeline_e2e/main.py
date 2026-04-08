@@ -52,6 +52,7 @@ def _load_runtime_dependencies() -> dict[str, Any]:
         from artefatos.a11_pipeline_e2e.src.evaluation import (
             build_summary,
             save_summary_files,
+            save_training_curves,
             save_visualizations,
         )
         from artefatos.a11_pipeline_e2e.src.inference import export_test_predictions
@@ -73,6 +74,7 @@ def _load_runtime_dependencies() -> dict[str, Any]:
         "prepare_split_data": prepare_split_data,
         "run_training_pipeline": run_training_pipeline,
         "save_summary_files": save_summary_files,
+        "save_training_curves": save_training_curves,
         "save_visualizations": save_visualizations,
         "validate_input_files": validate_input_files,
     }
@@ -110,6 +112,10 @@ def run_pipeline(
             output_dir=output_paths["visualizations"],
         )
 
+    deps["save_training_curves"](
+        history_path=execution.get("history_path"),
+        output_dir=output_paths["visualizations"],
+    )
     summary = deps["build_summary"](
         config=config,
         split_meta=split_data["split_meta"],

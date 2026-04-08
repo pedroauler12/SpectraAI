@@ -37,6 +37,26 @@ a11_pipeline_e2e/
     └── a11_pipeline_e2e.ipynb
 ```
 
+## Parametros do config.yaml
+
+| Parametro | Valor padrao | Descricao |
+|---|---|---|
+| `seed` | `42` | Semente global para reprodutibilidade (numpy, tensorflow, python) |
+| `data.image_size` | `[128, 128]` | Resolucao espacial dos patches ASTER em pixels |
+| `data.num_bands` | `9` | Numero de bandas multiespectrais do sensor ASTER |
+| `data.normalization_method` | `zscore` | Normalizacao por z-score (media=0, desvio=1) por banda |
+| `data.test_size` | `0.2` | Fracao do dataset reservada para teste final (20%) |
+| `data.val_size` | `0.2` | Fracao do treino reservada para validacao durante o treinamento |
+| `model.backbone` | `mobilenetv2` | Rede pre-treinada usada como extrator de features |
+| `model.resize_to` | `[160, 160]` | Resolucao de entrada esperada pelo MobileNetV2 |
+| `model.dropout_rate` | `0.25` | Taxa de dropout aplicada antes da camada de classificacao |
+| `model.fine_tune_last_layers` | `20` | Quantas camadas finais do backbone sao descongeladas na fase 2 |
+| `training.head_epochs` | `6` | Epocas maximas da fase 1 (somente cabeca treinada) |
+| `training.fine_tune_epochs` | `12` | Epocas maximas da fase 2 (backbone parcialmente descongelado) |
+| `training.head_learning_rate` | `1e-4` | Taxa de aprendizado da fase 1 |
+| `training.fine_tune_learning_rate` | `1e-5` | Taxa de aprendizado da fase 2 (menor para nao destruir features pre-treinadas) |
+| `evaluation.threshold_default` | `0.5` | Limiar de decisao binaria: probabilidade >= threshold → classe positiva |
+
 ## Entradas exigidas
 
 O pipeline parte do dataset pronto ja existente no projeto:
@@ -46,6 +66,51 @@ O pipeline parte do dataset pronto ja existente no projeto:
 
 Os caminhos sao definidos em `config.yaml` e resolvidos a partir da propria
 pasta do artefato.
+
+## Como obter os dados
+
+Os arquivos de entrada **nao estao versionados no repositorio** por conta do
+tamanho (137 MB). Para reproduzir o experimento:
+
+1. Obtenha o `pixels_dataset.csv` com o membro do grupo responsavel pelo
+   pipeline de dados (sprint A05/A06), ou reconstrua-o a partir dos
+   notebooks de pre-processamento em `notebooks/`.
+2. Coloque os arquivos em `data/` na raiz do repositorio antes de executar.
+
+Os caminhos esperados sao:
+
+```
+data/pixels_dataset.csv         # dataset multispectral ASTER (295 amostras, 9 bandas, 128x128 px)
+data/extracted_codes.json       # rotulos binarios (positivo/negativo para terras raras)
+```
+
+## Diretorio de execucao
+
+O comando oficial deve ser executado **a partir da raiz do repositorio**
+(onde a pasta `artefatos/` esta visivel). Os caminhos relativos definidos
+em `config.yaml` pressupõem esse diretorio de trabalho:
+
+```bash
+cd /caminho/para/g01        # raiz do repositorio
+python3 -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
+```
+
+Executar de outro diretorio resultara em `FileNotFoundError` ao resolver os
+caminhos do dataset.
+
+## Requisitos de hardware
+
+| Recurso | Minimo recomendado |
+|---|---|
+| RAM | 8 GB (dataset 137 MB + overhead TensorFlow) |
+| CPU | Qualquer processador moderno |
+| GPU | Opcional (CUDA acelera o treinamento) |
+| Armazenamento | ~500 MB livres para outputs |
+| Python | 3.11 (versao testada) |
+
+Tempo estimado de execucao completa:
+- **CPU:** 3–10 minutos
+- **GPU (CUDA):** 1–2 minutos
 
 ## Ambiente testado
 
@@ -101,6 +166,7 @@ Uma execucao completa gera, de forma padronizada:
 - `outputs/predictions/test_predictions.csv`
 - `outputs/visualizations/confusion_matrix.png`
 - `outputs/visualizations/roc_pr_curves.png`
+- `outputs/visualizations/training_curves.png`
 
 O `summary.json` e o `summary.csv` exportam o resumo tecnico da execucao,
 incluindo:
@@ -113,6 +179,29 @@ incluindo:
 - `test_balanced_accuracy`
 - `test_roc_auc`
 - `test_pr_auc`
+
+## Saidas esperadas
+
+Apos uma execucao completa com o dataset completo (295 amostras), os valores
+de referencia obtidos na ultima execucao validada sao:
+
+```json
+{
+  "test_accuracy": 0.881,
+  "test_precision": 0.833,
+  "test_recall": 0.870,
+  "test_f1": 0.851,
+  "test_balanced_accuracy": 0.879,
+  "test_roc_auc": 0.935,
+  "test_pr_auc": 0.875,
+  "n_test": 59,
+  "total_epochs": 13
+}
+```
+
+Variacoes menores nos valores sao esperadas entre execucoes por diferencas
+de hardware (ordenacao de operacoes de ponto flutuante), mas devem ser
+inferiores a 2% nas metricas principais com `seed: 42`.
 
 ## Reproducao dos experimentos
 
