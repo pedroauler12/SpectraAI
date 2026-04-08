@@ -7,3 +7,4 @@ Subpacotes:
     evaluation    : Métricas, curvas e matrizes de confusão.
     inference     : Predição em lote sobre novos dados.
 """
+"""Pacote de integracao do pipeline A11."""
