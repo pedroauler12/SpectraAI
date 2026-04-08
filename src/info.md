@@ -1,1 +1,0 @@
-Código modular e reutilizável
