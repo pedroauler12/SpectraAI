@@ -1,0 +1,47 @@
+# Configuracoes oficiais do A11.
+# Todos os caminhos relativos sao resolvidos a partir deste arquivo.
+
+seed: 42
+
+paths:
+  dataset_csv: ../../data/pixels_dataset.csv
+  extracted_codes_json: ../../data/extracted_codes.json
+  outputs_metrics: outputs/metrics
+  outputs_models: outputs/models
+  outputs_viz: outputs/visualizations
+  outputs_preds: outputs/predictions
+
+data:
+  image_size: [128, 128]
+  num_bands: 9
+  normalization_method: zscore
+  test_size: 0.2
+  val_size: 0.2
+
+model:
+  base_config_name: tl_baseline
+  backbone: mobilenetv2
+  num_classes: 2
+  resize_to: [160, 160]
+  dropout_rate: 0.25
+  fine_tune_last_layers: 20
+
+training:
+  batch_size: 8
+  head_epochs: 6
+  head_learning_rate: 1.0e-4
+  fine_tune_epochs: 12
+  fine_tune_learning_rate: 1.0e-5
+  early_stopping_patience_head: 3
+  early_stopping_patience_ft: 4
+
+evaluation:
+  threshold_default: 0.5
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - balanced_accuracy
+    - roc_auc
+    - pr_auc
