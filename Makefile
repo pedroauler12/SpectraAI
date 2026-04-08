@@ -5,7 +5,7 @@ setup-dev:
 	python -m pip install -r requirements-dev.txt
 
 test:
-	pytest -q testes
+	pytest -q src/tests
 
 coverage:
-	pytest -q --cov=src --cov-report=term-missing testes
+	pytest -q --cov=src --cov-report=term-missing src/tests
