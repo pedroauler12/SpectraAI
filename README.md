@@ -37,6 +37,7 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 - Eduardo Rizk
 - Giovanna Vieira
 - Larissa Souza
+- Lucas Jorge
 - Mateus Pereira
 - Pedro Auler
 
