@@ -88,6 +88,7 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
 ├── src/                   # código modular reutilizável (.py)
+│   └── apps/              # aplicações interativas (Streamlit)
 ├── notebooks/             # exploração, experimentos e narrativa
 ├── data/                  # dados de entrada
 ├── models/                # modelos treinados/checkpoints
@@ -96,6 +97,7 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── assets/                # imagens, logos e recursos estáticos
 ├── testes/                # testes automatizados
 ├── Makefile
+├── run_pipeline.py        # utilitário de execução iterativa do pipeline
 ├── requirements-dev.txt
 └── README.md
 ```
@@ -188,7 +190,17 @@ make test
 jupyter notebook
 ```
 
-### 5️⃣ Executar baseline clássico (A02)
+### 5️⃣ Executar pipeline iterativo de desenvolvimento
+```bash
+python run_pipeline.py
+```
+
+> Para a entrega oficial reprodutível (A11), use o comando abaixo (ver [Entrega A11](#entrega-a11)):
+> ```bash
+> python3 -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
+> ```
+
+### 6️⃣ Executar baseline clássico (A02)
 ```bash
 jupyter notebook artefatos/a02_baseline_classico/a02_baseline_classico.ipynb
 ```
