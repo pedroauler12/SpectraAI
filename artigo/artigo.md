@@ -594,7 +594,25 @@ Tabela 8 – Evolução comparativa de desempenho entre os modelos ao longo do p
 
 &emsp;&emsp;**Desbalanceamento de classes.** Embora o dataset apresente desbalanceamento moderado (60,7% negativos, 39,3% positivos) e métricas robustas tenham sido empregadas, a escassez de amostras da classe positiva limita a capacidade do modelo de aprender variações mais sutis de assinaturas de REE.
 
-### 8.4 Trabalhos Futuros
+### 8.4 Consolidação das Evidências Finais
+
+&emsp;&emsp;A consolidação das evidências experimentais e analíticas apresentadas ao longo deste trabalho permite sustentar, de forma robusta, as conclusões centrais da pesquisa. Em vez de considerar cada resultado de forma isolada, a leitura conjunta da Tabela 8, da Figura 11, da Figura 12 e da Figura 8 mostra que o ganho obtido pelo pipeline final decorre de um processo consistente de amadurecimento metodológico, interpretativo e operacional.
+
+&emsp;&emsp;Para facilitar essa leitura integrada, a Tabela 9 sintetiza o papel de cada evidência final na sustentação das conclusões do estudo.
+
+Tabela 9 – Síntese integrada das evidências finais e sua contribuição para as conclusões
+
+| Evidência | Resultado-chave | Conclusão sustentada |
+|---|---|---|
+| **Tabela 8** | Evolução de desempenho entre A03, A06, A08 e A11 | A incorporação de estrutura espacial e transfer learning produziu ganho progressivo e consistente |
+| **Figura 11** | TN=32, FP=4, FN=3, TP=20 | O modelo final equilibra detecção de áreas promissoras e controle de alarmes indevidos |
+| **Figura 12** | ROC-AUC=0,9167; PR-AUC=0,8588 | O desempenho permanece robusto sob diferentes limiares de decisão |
+| **Figura 8** | Ativações coerentes via Grad-CAM | As predições possuem interpretabilidade e plausibilidade geológica |
+| **Pipeline A11** | Execução integrada com seed fixa, configuração versionada e exportação automática de artefatos | O resultado final é reprodutível, auditável e aplicável em continuidade de pesquisa |
+
+
+
+### 8.5 Trabalhos Futuros
 
 &emsp;&emsp;As limitações identificadas apontam direções concretas para continuidade da pesquisa:
 
@@ -608,7 +626,7 @@ Tabela 8 – Evolução comparativa de desempenho entre os modelos ao longo do p
 
 &emsp;&emsp;(v) **Ranking contínuo de prospectividade:** Estender o modelo para produzir scores contínuos de prospectividade em vez de classificação binária, permitindo priorização graduada de alvos de exploração conforme o investimento operacional disponível.
 
-### 8.5 Considerações Finais
+### 8.6 Considerações Finais
 
 &emsp;&emsp;Os resultados obtidos demonstram que a convergência entre ciência de dados reprodutível, engenharia de atributos geoespaciais e aprendizado profundo adaptado via transfer learning constitui um caminho viável e promissor para automatização e escalabilidade em prospecção mineral de terras raras. O modelo MobileNetV2 adaptado espectralmente, consolidado no pipeline final A11, alcançou acurácia de 88,14%, F1-score de 0,8511 e ROC-AUC de 0,9167 em um dataset realista de 295 chips multiespectrais ASTER, superando consistentemente as abordagens tabulares e CNN simples ao longo de todas as etapas experimentais. A redução progressiva de falsos positivos (de 6 no MLP para 4 no modelo final) e falsos negativos (de 6 para 3) traduz-se em ganho operacional direto: menos recursos desperdiçados em investigações de campo desnecessárias e menos oportunidades de prospecção perdidas.
 
