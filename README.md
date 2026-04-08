@@ -98,7 +98,8 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── testes/                # testes automatizados
 ├── Makefile
 ├── run_pipeline.py        # utilitário de execução iterativa do pipeline
-├── requirements-dev.txt
+├── requirements.txt       # dependências de produção
+├── requirements-dev.txt   # dependências de desenvolvimento (pytest, etc.)
 └── README.md
 ```
 
@@ -177,6 +178,9 @@ cd <repo>
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -U pip
+# produção
+python -m pip install -r requirements.txt
+# desenvolvimento (inclui pytest, pytest-cov)
 python -m pip install -r requirements-dev.txt
 ```
 

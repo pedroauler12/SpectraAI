@@ -1,15 +1,3 @@
-numpy
-pandas
-openpyxl
-rasterio
+-r requirements.txt
 pytest
 pytest-cov
-matplotlib
-seaborn
-scikit-learn
-pyproj
-earthaccess
-tensorflow
-streamlit
-folium
-streamlit-folium
