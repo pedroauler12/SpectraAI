@@ -610,6 +610,8 @@ Tabela 9 – Síntese integrada das evidências finais e sua contribuição para
 | **Figura 8** | Ativações coerentes via Grad-CAM | As predições possuem interpretabilidade e plausibilidade geológica |
 | **Pipeline A11** | Execução integrada com seed fixa, configuração versionada e exportação automática de artefatos | O resultado final é reprodutível, auditável e aplicável em continuidade de pesquisa |
 
+&emsp;&emsp;No eixo quantitativo, a trajetória de desempenho observada entre os artefatos A03, A06, A08 e A11 demonstra uma evolução metodológica consistente, na qual cada etapa agregou capacidade discriminativa ao sistema. Conforme sintetizado na Tabela 8, o modelo MLP baseline, construído sobre representação tabular com PCA em 2 componentes, alcançou 79,66% de acurácia e F1-score de 0,7391, estabelecendo uma linha de base sólida, porém limitada pela perda de estrutura espacial dos chips multiespectrais. Na sequência, a CNN treinada do zero elevou os resultados para 82,44% de acurácia, F1-score de 0,7878 e ROC-AUC de 0,9011, evidenciando que a preservação do contexto espacial já produz ganhos concretos para o problema de prospecção mineral.
+
 
 
 ### 8.5 Trabalhos Futuros
