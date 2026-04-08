@@ -89,14 +89,19 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
 ├── src/                   # código modular reutilizável (.py)
-│   └── apps/              # aplicações interativas (Streamlit)
+│   ├── apps/              # aplicações interativas (Streamlit)
+│   ├── evaluation/        # módulo de avaliação de modelos
+│   └── tests/             # testes automatizados (pytest)
 ├── notebooks/             # exploração, experimentos e narrativa
 ├── data/                  # dados de entrada
 ├── models/                # modelos treinados/checkpoints
-├── outputs/               # métricas, gráficos e resultados gerados
+│   └── trained_models/    # experimentos de treino (configs e histórico)
+├── outputs/               # resultados gerados automaticamente
+│   ├── figures/           # gráficos e visualizações
+│   ├── metrics/           # métricas e JSONs de avaliação
+│   └── predictions/       # predições exportadas
 ├── slides/                # apresentações do projeto
 ├── assets/                # imagens, logos e recursos estáticos
-├── testes/                # testes automatizados
 ├── Makefile
 ├── run_pipeline.py        # utilitário de execução iterativa do pipeline
 ├── requirements.txt       # dependências de produção
