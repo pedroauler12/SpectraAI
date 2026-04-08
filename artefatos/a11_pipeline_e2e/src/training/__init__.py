@@ -11,6 +11,28 @@ from src.models.transfer_experiment_runner import TransferLearningExperimentRunn
 from src.reprodutibilidade import set_global_seed
 
 
+def _to_test_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    key_map = {
+        "val_accuracy": "test_accuracy",
+        "val_precision": "test_precision",
+        "val_recall": "test_recall",
+        "val_f1": "test_f1",
+        "val_balanced_accuracy": "test_balanced_accuracy",
+        "val_auc_roc": "test_roc_auc",
+        "val_pr_auc": "test_pr_auc",
+        "val_cm_tp": "test_cm_tp",
+        "val_cm_fp": "test_cm_fp",
+        "val_cm_tn": "test_cm_tn",
+        "val_cm_fn": "test_cm_fn",
+        "val_specificity": "test_specificity",
+        "val_sensitivity": "test_sensitivity",
+    }
+    return {
+        target_key: metrics.get(source_key)
+        for source_key, target_key in key_map.items()
+    }
+
+
 def run_training_pipeline(
     *,
     config: dict[str, Any],
@@ -51,7 +73,7 @@ def run_training_pipeline(
     runner.create_experiment_dir()
     runner.build_model(input_shape=tf_data["train_meta"]["input_shape"])
     train_result = runner.train_two_phases(tf_data, verbose=0)
-    test_metrics = runner.evaluate_on_test(tf_data)
+    test_metrics = _to_test_metrics(runner.evaluate_on_test(tf_data))
 
     runner.model.save(model_path)
     _save_history(history_path, train_result["full_history"])
@@ -59,6 +81,7 @@ def run_training_pipeline(
     result = {
         "config_name": config["model"]["base_config_name"],
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "evaluation_split": "test",
         "experiment_dir": str(runner.experiment_dir),
         "training_time_seconds": runner.training_time,
         "head_epochs": train_result["head_epochs"],
@@ -149,7 +172,7 @@ def _evaluate_loaded_model(
     model_path: Path,
     history_path: Path,
 ) -> dict[str, Any]:
-    metrics = runner.evaluate_on_test(tf_data)
+    metrics = _to_test_metrics(runner.evaluate_on_test(tf_data))
     total_epochs = None
     if history_path.exists():
         with history_path.open("r", encoding="utf-8") as file:
@@ -159,6 +182,7 @@ def _evaluate_loaded_model(
     return {
         "config_name": config["model"]["base_config_name"],
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "evaluation_split": "test",
         "experiment_dir": str(model_path.parent),
         "training_time_seconds": None,
         "head_epochs": None,

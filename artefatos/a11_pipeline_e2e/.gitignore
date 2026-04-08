@@ -19,9 +19,17 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# Outputs gerados (não versionar binários de modelo)
-outputs/models/*
+# Outputs gerados (artefato reproduzível: manter apenas .gitkeep)
+outputs/**/*
+!outputs/
+!outputs/metrics/
+!outputs/models/
+!outputs/predictions/
+!outputs/visualizations/
+!outputs/metrics/.gitkeep
 !outputs/models/.gitkeep
+!outputs/predictions/.gitkeep
+!outputs/visualizations/.gitkeep
 
 # Sistema
 .DS_Store

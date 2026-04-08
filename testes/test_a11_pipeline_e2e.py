@@ -1,8 +1,15 @@
+import argparse
+import csv
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 import yaml
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _write_config(path: Path, dataset_csv: Path, codes_json: Path) -> Path:
@@ -42,7 +49,15 @@ def _write_config(path: Path, dataset_csv: Path, codes_json: Path) -> Path:
         },
         "evaluation": {
             "threshold_default": 0.5,
-            "metrics": ["accuracy", "precision", "recall", "f1", "balanced_accuracy", "roc_auc", "pr_auc"],
+            "metrics": [
+                "accuracy",
+                "precision",
+                "recall",
+                "f1",
+                "balanced_accuracy",
+                "roc_auc",
+                "pr_auc",
+            ],
         },
     }
     with path.open("w", encoding="utf-8") as file:
@@ -58,59 +73,121 @@ def _write_dataset(tmp_path: Path) -> tuple[Path, Path]:
     dataset.to_csv(dataset_csv, index=False)
 
     codes_json = tmp_path / "codes.json"
-    codes_json.write_text(json.dumps({"positivos": ["A"], "negativos": ["B"]}), encoding="utf-8")
+    codes_json.write_text(
+        json.dumps({"positivos": ["A"], "negativos": ["B"]}),
+        encoding="utf-8",
+    )
     return dataset_csv, codes_json
 
 
-def test_a11_pipeline_minimal_execution(tmp_path: Path, monkeypatch):
+def _write_split_dataset(tmp_path: Path) -> tuple[Path, Path]:
     pd = pytest.importorskip("pandas")
 
-    import argparse
-    import artefatos.a11_pipeline_e2e.main as a11_main
+    rows: list[dict[str, object]] = []
+    positives = [f"POS_{index}" for index in range(5)]
+    negatives = [f"NEG_{index}" for index in range(5)]
 
-    dataset_csv, codes_json = _write_dataset(tmp_path)
-    config_path = _write_config(tmp_path / "config.yaml", dataset_csv, codes_json)
-    output_root = tmp_path / "run_outputs"
+    for image_id in positives + negatives:
+        for repeat in range(2):
+            rows.append(
+                {
+                    "path": f"/dataset/{image_id}/tile_{repeat}.tif",
+                    "pixel_0": float(repeat),
+                    "count": 1,
+                    "height": 1,
+                    "width": 1,
+                }
+            )
 
-    split_data = {
-        "image_ids_test": ["A", "B"],
-        "split_meta": {
-            "n_total": 4,
-            "n_valid": 4,
-            "n_train": 2,
-            "n_val": 0,
-            "n_test": 2,
-        },
+    dataset = pd.DataFrame(rows)
+    dataset_csv = tmp_path / "pixels_dataset.csv"
+    dataset.to_csv(dataset_csv, index=False)
+
+    codes_json = tmp_path / "codes.json"
+    codes_json.write_text(
+        json.dumps({"positivos": positives, "negativos": negatives}),
+        encoding="utf-8",
+    )
+    return dataset_csv, codes_json
+
+
+def _expected_summary_keys() -> set[str]:
+    return {
+        "config_used",
+        "timestamp",
+        "seed",
+        "model_name",
+        "evaluation_split",
+        "threshold",
+        "n_total",
+        "n_valid",
+        "n_train",
+        "n_val",
+        "n_test",
+        "test_accuracy",
+        "test_precision",
+        "test_recall",
+        "test_f1",
+        "test_balanced_accuracy",
+        "test_roc_auc",
+        "test_pr_auc",
+        "training_time_seconds",
+        "total_epochs",
+        "head_epochs",
+        "ft_epochs",
+        "model_path",
+        "history_path",
+        "predictions_path",
+        "experiment_dir",
     }
+
+
+def _build_runtime_deps(split_data: dict[str, object]):
+    pd = pytest.importorskip("pandas")
+
+    from artefatos.a11_pipeline_e2e.src.evaluation import (
+        build_summary,
+        save_summary_files,
+    )
+    from artefatos.a11_pipeline_e2e.src.preprocessing import (
+        ensure_output_dirs,
+        load_pipeline_config,
+        validate_input_files,
+    )
 
     class DummyModel:
         pass
 
     def fake_prepare_split_data(config, limit_samples=None):
+        assert limit_samples in {None, 2}
         return split_data
 
     def fake_run_training_pipeline(config, split_data, output_paths, skip_train=False):
         model_path = output_paths["models"] / "best_model.keras"
         model_path.write_text("dummy-model", encoding="utf-8")
         history_path = output_paths["models"] / "history.json"
-        history_path.write_text(json.dumps({"loss": [0.5], "accuracy": [0.8]}), encoding="utf-8")
+        history_path.write_text(
+            json.dumps({"loss": [0.5], "accuracy": [0.8], "val_accuracy": [0.75]}),
+            encoding="utf-8",
+        )
         return {
             "runner": type("Runner", (), {"model": DummyModel()})(),
             "tf_data": {"test_ds": object()},
             "result": {
                 "timestamp": "2026-04-08 10:00:00",
+                "evaluation_split": "test",
                 "experiment_dir": str(output_paths["models"]),
                 "training_time_seconds": 1.23,
                 "total_epochs": 2,
                 "head_epochs": 1,
                 "ft_epochs": 1,
-                "val_accuracy": 0.9,
-                "val_precision": 0.91,
-                "val_recall": 0.89,
-                "val_f1": 0.9,
-                "val_balanced_accuracy": 0.9,
-                "val_auc_roc": 0.95,
-                "val_pr_auc": 0.94,
+                "test_accuracy": 0.9,
+                "test_precision": 0.91,
+                "test_recall": 0.89,
+                "test_f1": 0.9,
+                "test_balanced_accuracy": 0.9,
+                "test_roc_auc": 0.95,
+                "test_pr_auc": 0.94,
             },
             "model_path": model_path,
             "history_path": history_path,
@@ -136,27 +213,137 @@ def test_a11_pipeline_minimal_execution(tmp_path: Path, monkeypatch):
         (output_dir / "confusion_matrix.png").write_text("cm", encoding="utf-8")
         (output_dir / "roc_pr_curves.png").write_text("rocpr", encoding="utf-8")
 
-    monkeypatch.setattr(a11_main, "prepare_split_data", fake_prepare_split_data)
-    monkeypatch.setattr(a11_main, "run_training_pipeline", fake_run_training_pipeline)
-    monkeypatch.setattr(a11_main, "export_test_predictions", fake_export_test_predictions)
-    monkeypatch.setattr(a11_main, "save_visualizations", fake_save_visualizations)
-    monkeypatch.setattr(
-        a11_main,
-        "parse_args",
-        lambda: argparse.Namespace(
+    return {
+        "build_summary": build_summary,
+        "ensure_output_dirs": ensure_output_dirs,
+        "export_test_predictions": fake_export_test_predictions,
+        "load_pipeline_config": load_pipeline_config,
+        "prepare_split_data": fake_prepare_split_data,
+        "run_training_pipeline": fake_run_training_pipeline,
+        "save_summary_files": save_summary_files,
+        "save_visualizations": fake_save_visualizations,
+        "validate_input_files": validate_input_files,
+    }
+
+
+def test_a11_cli_help_module():
+    result = subprocess.run(
+        [sys.executable, "-m", "artefatos.a11_pipeline_e2e", "--help"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "--config" in result.stdout
+    assert "--skip-train" in result.stdout
+
+
+def test_a11_cli_help_script():
+    result = subprocess.run(
+        [sys.executable, "artefatos/a11_pipeline_e2e/main.py", "--help"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "--output-dir" in result.stdout
+    assert "Pipeline end-to-end do A11" in result.stdout
+
+
+def test_a11_pipeline_minimal_execution(tmp_path: Path):
+    import artefatos.a11_pipeline_e2e.main as a11_main
+
+    dataset_csv, codes_json = _write_dataset(tmp_path)
+    config_path = _write_config(tmp_path / "config.yaml", dataset_csv, codes_json)
+    output_root = tmp_path / "run_outputs"
+
+    split_data = {
+        "image_ids_test": ["A", "B"],
+        "split_meta": {
+            "n_total": 4,
+            "n_valid": 4,
+            "n_train": 2,
+            "n_val": 0,
+            "n_test": 2,
+        },
+    }
+
+    summary = a11_main.run_pipeline(
+        argparse.Namespace(
             config=config_path,
             limit_samples=2,
             skip_train=False,
             skip_inference=False,
             output_dir=output_root,
         ),
+        deps=_build_runtime_deps(split_data),
     )
 
-    assert a11_main.main() == 0
+    summary_json_path = output_root / "metrics" / "summary.json"
+    summary_csv_path = output_root / "metrics" / "summary.csv"
+    predictions_path = output_root / "predictions" / "test_predictions.csv"
+    confusion_matrix_path = output_root / "visualizations" / "confusion_matrix.png"
+    roc_pr_path = output_root / "visualizations" / "roc_pr_curves.png"
+
+    assert summary["evaluation_split"] == "test"
+    assert summary["test_accuracy"] == 0.9
+    assert summary["predictions_path"] == str(predictions_path)
+    assert summary_json_path.exists()
+    assert summary_csv_path.exists()
+    assert (output_root / "models" / "best_model.keras").exists()
+    assert (output_root / "models" / "history.json").exists()
+    assert predictions_path.exists()
+    assert confusion_matrix_path.exists()
+    assert roc_pr_path.exists()
+
+    summary_json = json.loads(summary_json_path.read_text(encoding="utf-8"))
+    assert _expected_summary_keys().issubset(summary_json.keys())
+    assert summary_json["evaluation_split"] == "test"
+    assert summary_json["test_precision"] == 0.91
+
+    with summary_csv_path.open("r", encoding="utf-8", newline="") as file:
+        row = next(csv.DictReader(file))
+    assert _expected_summary_keys().issubset(row.keys())
+    assert row["evaluation_split"] == "test"
+
+
+def test_a11_pipeline_skip_inference_keeps_summary_without_predictions(tmp_path: Path):
+    import artefatos.a11_pipeline_e2e.main as a11_main
+
+    dataset_csv, codes_json = _write_dataset(tmp_path)
+    config_path = _write_config(tmp_path / "config.yaml", dataset_csv, codes_json)
+    output_root = tmp_path / "run_outputs"
+
+    split_data = {
+        "image_ids_test": ["A", "B"],
+        "split_meta": {
+            "n_total": 4,
+            "n_valid": 4,
+            "n_train": 2,
+            "n_val": 0,
+            "n_test": 2,
+        },
+    }
+
+    summary = a11_main.run_pipeline(
+        argparse.Namespace(
+            config=config_path,
+            limit_samples=None,
+            skip_train=False,
+            skip_inference=True,
+            output_dir=output_root,
+        ),
+        deps=_build_runtime_deps(split_data),
+    )
+
+    assert summary["predictions_path"] is None
     assert (output_root / "metrics" / "summary.json").exists()
-    assert (output_root / "metrics" / "summary.csv").exists()
-    assert (output_root / "predictions" / "test_predictions.csv").exists()
-    assert (output_root / "visualizations" / "confusion_matrix.png").exists()
+    assert not (output_root / "predictions" / "test_predictions.csv").exists()
+    assert not (output_root / "visualizations" / "confusion_matrix.png").exists()
 
 
 def test_a11_pipeline_missing_dataset(tmp_path: Path):
@@ -176,8 +363,50 @@ def test_a11_pipeline_missing_dataset(tmp_path: Path):
         validate_input_files(config)
 
 
+def test_a11_config_paths_are_resolved_from_config_location(tmp_path: Path):
+    from artefatos.a11_pipeline_e2e.src.preprocessing import load_pipeline_config
+
+    nested_dir = tmp_path / "nested" / "artifact"
+    nested_dir.mkdir(parents=True)
+    dataset_csv, codes_json = _write_dataset(tmp_path)
+    config_path = _write_config(nested_dir / "config.yaml", dataset_csv, codes_json)
+
+    config = load_pipeline_config(config_path)
+
+    assert config["paths"]["outputs_metrics"] == (nested_dir / "outputs/metrics").resolve()
+    assert config["paths"]["outputs_models"] == (nested_dir / "outputs/models").resolve()
+    assert config["paths"]["outputs_viz"] == (nested_dir / "outputs/visualizations").resolve()
+    assert config["paths"]["outputs_preds"] == (nested_dir / "outputs/predictions").resolve()
+
+
+def test_a11_prepare_split_data_is_deterministic(tmp_path: Path):
+    from artefatos.a11_pipeline_e2e.src.preprocessing import (
+        load_pipeline_config,
+        prepare_split_data,
+    )
+
+    dataset_csv, codes_json = _write_split_dataset(tmp_path)
+    config_path = _write_config(tmp_path / "config.yaml", dataset_csv, codes_json)
+    config = load_pipeline_config(config_path)
+
+    first = prepare_split_data(config)
+    second = prepare_split_data(config)
+
+    assert list(first["image_ids_train"]) == list(second["image_ids_train"])
+    assert list(first["image_ids_val"]) == list(second["image_ids_val"])
+    assert list(first["image_ids_test"]) == list(second["image_ids_test"])
+    assert first["split_meta"]["n_train"] == second["split_meta"]["n_train"]
+    assert first["split_meta"]["n_val"] == second["split_meta"]["n_val"]
+    assert first["split_meta"]["n_test"] == second["split_meta"]["n_test"]
+
+
 def test_a11_pipeline_skip_train_requires_saved_model(tmp_path: Path):
-    from artefatos.a11_pipeline_e2e.src.preprocessing import ensure_output_dirs, load_pipeline_config
+    pytest.importorskip("tensorflow")
+
+    from artefatos.a11_pipeline_e2e.src.preprocessing import (
+        ensure_output_dirs,
+        load_pipeline_config,
+    )
     from artefatos.a11_pipeline_e2e.src.training import run_training_pipeline
 
     dataset_csv, codes_json = _write_dataset(tmp_path)

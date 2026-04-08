@@ -102,6 +102,23 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 
 ---
 
+## Entrega A11
+
+A entrega final reproduzivel do pipeline end-to-end esta em
+`artefatos/a11_pipeline_e2e/`.
+
+- README oficial do artefato: `artefatos/a11_pipeline_e2e/README.md`
+- comando oficial:
+
+```bash
+python3 -m pip install -r artefatos/a11_pipeline_e2e/requirements.txt
+
+python3 -m artefatos.a11_pipeline_e2e \
+  --config artefatos/a11_pipeline_e2e/config.yaml
+```
+
+---
+
 ## 📌 Regras do Projeto
 
 ### 📘 notebooks/
