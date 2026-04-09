@@ -187,9 +187,9 @@ def render_page() -> None:
         st_folium(
             fmap,
             key=f"ranking_map_{model_key}_{threshold_mode}",
-            width=None,
             height=620,
             returned_objects=[],
+            use_container_width=True,
         )
 
     with table_col:

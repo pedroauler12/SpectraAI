@@ -288,3 +288,48 @@ def test_probability_ranking_page_helpers_smoke(tmp_path: Path):
 
     assert list(filtered_df["numero_amostra"]) == ["B2"]
     assert isinstance(fmap, folium.Map)
+
+
+def test_enrich_ranking_frame_adds_operational_columns(tmp_path: Path):
+    pytest.importorskip("streamlit")
+
+    page_path = Path(__file__).resolve().parents[1] / "apps" / "pages" / "a11_painel_operacional.py"
+    spec = importlib.util.spec_from_file_location("operational_page", page_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec is not None and spec.loader is not None
+    spec.loader.exec_module(module)
+
+    df = pd.DataFrame(
+        [
+            {
+                "rank": 1,
+                "numero_amostra": "B2",
+                "prob_pos": 0.84,
+                "pred_label_threshold": "Positivo",
+                "decision_threshold": 0.65,
+                "decision_threshold_name": "threshold_f1",
+                "classe_balanceamento": "POSITIVO",
+                "litologia_padronizada": "carbonatito",
+                "latitude_wgs84_decimal": -18.2,
+                "longitude_wgs84_decimal": -46.2,
+            },
+            {
+                "rank": 2,
+                "numero_amostra": "A1",
+                "prob_pos": 0.31,
+                "pred_label_threshold": "Negativo",
+                "decision_threshold": 0.65,
+                "decision_threshold_name": "threshold_f1",
+                "classe_balanceamento": "NEGATIVO",
+                "litologia_padronizada": "gnaisse",
+                "latitude_wgs84_decimal": -18.1,
+                "longitude_wgs84_decimal": -46.1,
+            },
+        ]
+    )
+
+    enriched = module.enrich_ranking_frame(df)
+
+    assert list(enriched["tier"]) == ["Muito Alto", "Baixo"]
+    assert list(enriched["prioridade_operacional"]) == ["Campo imediato", "Baixa prioridade"]
+    assert "recomendacao" in enriched.columns

@@ -1,4 +1,5 @@
 from pathlib import Path
+import importlib
 
 import pytest
 
@@ -123,10 +124,22 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
         out_tif.write_bytes(b"fake")
         return out_tif
 
-    monkeypatch.setattr("src.tiles.earthaccess_utils.login_earthdata", fake_login)
-    monkeypatch.setattr("src.tiles.earthaccess_utils.download_granule", fake_download)
-    monkeypatch.setattr("src.tiles.multiband.list_band_tifs", fake_list_band_tifs)
-    monkeypatch.setattr("src.tiles.multiband.crop_and_stack_multiband", fake_crop_and_stack_multiband)
+    for module_name, attr_name, replacement in (
+        ("src.tiles.earthaccess_utils", "login_earthdata", fake_login),
+        ("src.tiles.earthaccess_utils", "download_granule", fake_download),
+        ("src.tiles.multiband", "list_band_tifs", fake_list_band_tifs),
+        ("src.tiles.multiband", "crop_and_stack_multiband", fake_crop_and_stack_multiband),
+        ("tiles.earthaccess_utils", "login_earthdata", fake_login),
+        ("tiles.earthaccess_utils", "download_granule", fake_download),
+        ("tiles.multiband", "list_band_tifs", fake_list_band_tifs),
+        ("tiles.multiband", "crop_and_stack_multiband", fake_crop_and_stack_multiband),
+    ):
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            continue
+        monkeypatch.setattr(module, attr_name, replacement)
+    monkeypatch.setattr("earthaccess.login", lambda *args, **kwargs: None)
     monkeypatch.setattr(geo, "read_chip_tif", lambda path: chip_multiband)
 
     result = predict_point_from_earthdata(

@@ -261,9 +261,9 @@ with map_col:
     map_state = st_folium(
         fmap,
         key="spectraai_folium_map",
-        width="stretch",
         height=620,
         returned_objects=["last_clicked"],
+        use_container_width=True,
     )
 
     last_clicked = map_state.get("last_clicked")
