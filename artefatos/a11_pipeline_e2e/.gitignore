@@ -24,10 +24,14 @@ outputs/**/*
 !outputs/
 !outputs/metrics/
 !outputs/models/
+!outputs/notebooks/
+!outputs/notebook_visualizations/
 !outputs/predictions/
 !outputs/visualizations/
 !outputs/metrics/.gitkeep
 !outputs/models/.gitkeep
+!outputs/notebooks/.gitkeep
+!outputs/notebook_visualizations/.gitkeep
 !outputs/predictions/.gitkeep
 !outputs/visualizations/.gitkeep
 

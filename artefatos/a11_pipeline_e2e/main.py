@@ -44,6 +44,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Diretorio alternativo para salvar outputs do A11.",
     )
+    parser.add_argument(
+        "--execute-notebook",
+        action="store_true",
+        help=(
+            "Executa tambem o notebook oficial do A11 de forma headless e salva "
+            "uma copia executada em outputs/notebooks/."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -62,6 +70,7 @@ def _load_runtime_dependencies() -> dict[str, Any]:
             prepare_split_data,
             validate_input_files,
         )
+        from artefatos.a11_pipeline_e2e.src.reporting import execute_notebook_report
         from artefatos.a11_pipeline_e2e.src.training import run_training_pipeline
     except ModuleNotFoundError as exc:
         raise SystemExit(_format_missing_dependency_error(exc)) from exc
@@ -69,6 +78,7 @@ def _load_runtime_dependencies() -> dict[str, Any]:
     return {
         "build_summary": build_summary,
         "ensure_output_dirs": ensure_output_dirs,
+        "execute_notebook_report": execute_notebook_report,
         "export_test_predictions": export_test_predictions,
         "load_pipeline_config": load_pipeline_config,
         "prepare_split_data": prepare_split_data,
@@ -129,6 +139,23 @@ def run_pipeline(
         json_path=output_paths["metrics"] / "summary.json",
         csv_path=output_paths["metrics"] / "summary.csv",
     )
+
+    if getattr(args, "execute_notebook", False):
+        notebook_result = deps["execute_notebook_report"](
+            notebook_path=Path(__file__).resolve().parent / "notebooks" / "a11_pipeline_e2e.ipynb",
+            repo_root=Path(__file__).resolve().parents[2],
+            output_dir=output_paths["models"].parent / "notebooks",
+        )
+        summary["executed_notebook_path"] = str(notebook_result["executed_notebook_path"])
+        summary["notebook_visualizations_dir"] = str(
+            notebook_result["notebook_visualizations_dir"]
+        )
+        deps["save_summary_files"](
+            summary=summary,
+            json_path=output_paths["metrics"] / "summary.json",
+            csv_path=output_paths["metrics"] / "summary.csv",
+        )
+
     return summary
 
 
@@ -140,7 +167,9 @@ def _format_missing_dependency_error(exc: ModuleNotFoundError) -> str:
         f"Modulo nao encontrado: {missing_module}\n\n"
         "Instale as dependencias do artefato com:\n"
         f"python3 -m pip install -r {requirements_path}\n\n"
-        "Se estiver usando ambiente virtual, ative-o antes de executar o pipeline."
+        "Se estiver usando ambiente virtual, ative-o antes de executar o pipeline.\n"
+        "Para reproduzir o notebook por CLI, garanta tambem as dependencias de "
+        "execucao de notebooks previstas no requirements."
     )
 
 

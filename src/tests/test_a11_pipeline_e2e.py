@@ -213,9 +213,22 @@ def _build_runtime_deps(split_data: dict[str, object]):
         (output_dir / "confusion_matrix.png").write_text("cm", encoding="utf-8")
         (output_dir / "roc_pr_curves.png").write_text("rocpr", encoding="utf-8")
 
+    def fake_execute_notebook_report(notebook_path, repo_root, output_dir):
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        executed_notebook_path = output_dir / "a11_pipeline_e2e.executed.ipynb"
+        executed_notebook_path.write_text("executed", encoding="utf-8")
+        notebook_visualizations_dir = output_dir.parent / "notebook_visualizations"
+        notebook_visualizations_dir.mkdir(parents=True, exist_ok=True)
+        return {
+            "executed_notebook_path": executed_notebook_path,
+            "notebook_visualizations_dir": notebook_visualizations_dir,
+        }
+
     return {
         "build_summary": build_summary,
         "ensure_output_dirs": ensure_output_dirs,
+        "execute_notebook_report": fake_execute_notebook_report,
         "export_test_predictions": fake_export_test_predictions,
         "load_pipeline_config": load_pipeline_config,
         "prepare_split_data": fake_prepare_split_data,
@@ -238,6 +251,7 @@ def test_a11_cli_help_module():
     assert result.returncode == 0
     assert "--config" in result.stdout
     assert "--skip-train" in result.stdout
+    assert "--execute-notebook" in result.stdout
 
 
 def test_a11_cli_help_script():
@@ -279,6 +293,7 @@ def test_a11_pipeline_minimal_execution(tmp_path: Path):
             skip_train=False,
             skip_inference=False,
             output_dir=output_root,
+            execute_notebook=False,
         ),
         deps=_build_runtime_deps(split_data),
     )
@@ -336,6 +351,7 @@ def test_a11_pipeline_skip_inference_keeps_summary_without_predictions(tmp_path:
             skip_train=False,
             skip_inference=True,
             output_dir=output_root,
+            execute_notebook=False,
         ),
         deps=_build_runtime_deps(split_data),
     )
@@ -361,6 +377,41 @@ def test_a11_pipeline_missing_dataset(tmp_path: Path):
 
     with pytest.raises(FileNotFoundError):
         validate_input_files(config)
+
+
+def test_a11_pipeline_execute_notebook_exports_report_paths(tmp_path: Path):
+    import artefatos.a11_pipeline_e2e.main as a11_main
+
+    dataset_csv, codes_json = _write_dataset(tmp_path)
+    config_path = _write_config(tmp_path / "config.yaml", dataset_csv, codes_json)
+    output_root = tmp_path / "run_outputs"
+
+    split_data = {
+        "image_ids_test": ["A", "B"],
+        "split_meta": {
+            "n_total": 4,
+            "n_valid": 4,
+            "n_train": 2,
+            "n_val": 0,
+            "n_test": 2,
+        },
+    }
+
+    summary = a11_main.run_pipeline(
+        argparse.Namespace(
+            config=config_path,
+            limit_samples=None,
+            skip_train=False,
+            skip_inference=False,
+            output_dir=output_root,
+            execute_notebook=True,
+        ),
+        deps=_build_runtime_deps(split_data),
+    )
+
+    assert summary["executed_notebook_path"].endswith("a11_pipeline_e2e.executed.ipynb")
+    assert summary["notebook_visualizations_dir"].endswith("notebook_visualizations")
+    assert (output_root / "notebooks" / "a11_pipeline_e2e.executed.ipynb").exists()
 
 
 def test_a11_config_paths_are_resolved_from_config_location(tmp_path: Path):
@@ -421,3 +472,47 @@ def test_a11_pipeline_skip_train_requires_saved_model(tmp_path: Path):
             output_paths=output_paths,
             skip_train=True,
         )
+
+
+def test_execute_notebook_report_runs_temp_notebook(tmp_path: Path):
+    nbformat = pytest.importorskip("nbformat")
+    pytest.importorskip("nbconvert")
+    pytest.importorskip("ipykernel")
+
+    from artefatos.a11_pipeline_e2e.src.reporting import execute_notebook_report
+
+    repo_root = tmp_path / "repo"
+    notebook_dir = repo_root / "artefatos" / "a11_pipeline_e2e" / "notebooks"
+    notebook_dir.mkdir(parents=True)
+    notebook_path = notebook_dir / "temp_report.ipynb"
+
+    notebook = nbformat.v4.new_notebook(
+        cells=[
+            nbformat.v4.new_code_cell(
+                "from pathlib import Path\n"
+                "Path('marker.txt').write_text('ok', encoding='utf-8')\n"
+                "print('executed')\n"
+            )
+        ],
+        metadata={
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3",
+            }
+        },
+    )
+    with notebook_path.open("w", encoding="utf-8") as file:
+        nbformat.write(notebook, file)
+
+    result = execute_notebook_report(
+        notebook_path=notebook_path,
+        repo_root=repo_root,
+    )
+
+    assert (repo_root / "marker.txt").exists()
+    assert result["executed_notebook_path"].exists()
+
+    with result["executed_notebook_path"].open("r", encoding="utf-8") as file:
+        executed = nbformat.read(file, as_version=4)
+    assert executed.cells[0]["execution_count"] is not None
