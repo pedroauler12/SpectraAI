@@ -19,6 +19,7 @@ def test_predict_chip_array_basic(tmp_path: Path):
     bundle = TransferInferenceBundle(
         project_root=tmp_path,
         model=DummyModel(),
+        model_name="Transfer Learning (A08)",
         normalizer={
             "method": "zscore",
             "data_format": "channels_last",
@@ -30,6 +31,7 @@ def test_predict_chip_array_basic(tmp_path: Path):
         normalization="zscore",
         class_names=("Negativo", "Positivo"),
         decision_threshold=0.5,
+        decision_threshold_name="threshold_0.5",
         seed=42,
         dataset_csv=tmp_path / "pixels_dataset.csv",
         extracted_codes_json=tmp_path / "extracted_codes.json",
@@ -70,6 +72,7 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
     bundle = TransferInferenceBundle(
         project_root=tmp_path,
         model=DummyModel(),
+        model_name="Transfer Learning (A08)",
         normalizer={
             "method": "zscore",
             "data_format": "channels_last",
@@ -81,6 +84,7 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
         normalization="zscore",
         class_names=("Negativo", "Positivo"),
         decision_threshold=0.5,
+        decision_threshold_name="threshold_0.5",
         seed=42,
         dataset_csv=tmp_path / "pixels_dataset.csv",
         extracted_codes_json=tmp_path / "extracted_codes.json",
@@ -119,10 +123,26 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
         out_tif.write_bytes(b"fake")
         return out_tif
 
-    monkeypatch.setattr("src.tiles.earthaccess_utils.login_earthdata", fake_login)
-    monkeypatch.setattr("src.tiles.earthaccess_utils.download_granule", fake_download)
-    monkeypatch.setattr("src.tiles.multiband.list_band_tifs", fake_list_band_tifs)
-    monkeypatch.setattr("src.tiles.multiband.crop_and_stack_multiband", fake_crop_and_stack_multiband)
+    for import_path in (
+        "src.tiles.earthaccess_utils.login_earthdata",
+        "tiles.earthaccess_utils.login_earthdata",
+    ):
+        monkeypatch.setattr(import_path, fake_login)
+    for import_path in (
+        "src.tiles.earthaccess_utils.download_granule",
+        "tiles.earthaccess_utils.download_granule",
+    ):
+        monkeypatch.setattr(import_path, fake_download)
+    for import_path in (
+        "src.tiles.multiband.list_band_tifs",
+        "tiles.multiband.list_band_tifs",
+    ):
+        monkeypatch.setattr(import_path, fake_list_band_tifs)
+    for import_path in (
+        "src.tiles.multiband.crop_and_stack_multiband",
+        "tiles.multiband.crop_and_stack_multiband",
+    ):
+        monkeypatch.setattr(import_path, fake_crop_and_stack_multiband)
     monkeypatch.setattr(geo, "read_chip_tif", lambda path: chip_multiband)
 
     result = predict_point_from_earthdata(
