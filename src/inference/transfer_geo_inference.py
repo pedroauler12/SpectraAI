@@ -22,15 +22,17 @@ import numpy as np
 import pandas as pd
 
 try:
-    from models.cnn_data_prep import fit_channel_normalizer, prepare_grouped_cnn_splits
+    from models.cnn_data_prep import dataframe_to_cnn_tensor, fit_channel_normalizer, prepare_grouped_cnn_splits
     from models.cnn_tf_data_pipeline import adapt_cnn_input_tensor
 except ImportError:  # pragma: no cover - fallback para imports via pacote src.*
-    from src.models.cnn_data_prep import fit_channel_normalizer, prepare_grouped_cnn_splits
+    from src.models.cnn_data_prep import dataframe_to_cnn_tensor, fit_channel_normalizer, prepare_grouped_cnn_splits
     from src.models.cnn_tf_data_pipeline import adapt_cnn_input_tensor
 
 
 DEFAULT_CLASS_NAMES = ("Negativo", "Positivo")
 DEFAULT_BAND_ORDER = ("B01", "B02", "B03N", "B04", "B05", "B06", "B07", "B08", "B09")
+RANKING_CACHE_FILENAME = "full_dataset_probability_ranking.csv"
+A11_RANKING_CACHE_FILENAME = "full_dataset_probability_ranking_a11_pipeline_e2e.csv"
 
 
 @dataclass
@@ -195,6 +197,13 @@ def _resolve_config_path(base_dir: Path, path_value: str | Path) -> Path:
     return (base_dir / path).resolve()
 
 
+def _normalize_model_key(model_key: str) -> str:
+    normalized = str(model_key).strip()
+    if normalized not in {"a08_transfer_learning", "a11_pipeline_e2e"}:
+        raise ValueError(f"Modelo nao suportado para inferencia/ranking: {model_key}")
+    return normalized
+
+
 def _build_transfer_inference_bundle(
     *,
     root: Path,
@@ -250,7 +259,7 @@ def _build_transfer_inference_bundle(
         normalization=normalization,
         class_names=class_names,
         decision_threshold=float(decision_threshold),
-        decision_threshold_name=decision_threshold_name,
+        decision_threshold_name=str(decision_threshold_name),
         seed=int(seed),
         dataset_csv=dataset_csv_path,
         extracted_codes_json=codes_path,
@@ -285,6 +294,251 @@ def _resolve_threshold_from_metrics(
     except Exception:
         return float(fallback_threshold), "threshold_0.5"
     return resolved, threshold_name
+
+
+def _resolve_threshold_config(
+    project_root: Path,
+    *,
+    threshold_mode: str,
+    model_key: str,
+) -> tuple[float, str]:
+    normalized_model_key = _normalize_model_key(model_key)
+    if threshold_mode == "threshold_0.5":
+        return 0.5, "threshold_0.5"
+
+    if normalized_model_key == "a11_pipeline_e2e":
+        config_path = project_root / "artefatos" / "a11_pipeline_e2e" / "config.yaml"
+        if not config_path.exists():
+            return 0.5, "threshold_0.5"
+
+        try:
+            import yaml
+
+            with config_path.open("r", encoding="utf-8") as file:
+                config = yaml.safe_load(file)
+            return float(config["evaluation"]["threshold_default"]), "threshold_default"
+        except Exception:
+            return 0.5, "threshold_0.5"
+
+    return _resolve_threshold_from_metrics(
+        project_root,
+        threshold_name=threshold_mode,
+        fallback_threshold=0.5,
+    )
+
+
+def _ranking_cache_path(project_root: Path, *, model_key: str) -> Path:
+    normalized_model_key = _normalize_model_key(model_key)
+    filename = (
+        RANKING_CACHE_FILENAME
+        if normalized_model_key == "a08_transfer_learning"
+        else A11_RANKING_CACHE_FILENAME
+    )
+    return project_root / "outputs" / "a09_interpretabilidade_visualizacao" / filename
+
+
+def _extract_sample_id_from_path(path_value: str) -> str:
+    match = re.search(r"/ASTER_IMG/([^/]+)/", str(path_value))
+    return match.group(1) if match else ""
+
+
+def _load_points_metadata(project_root: Path) -> pd.DataFrame:
+    excel_path = project_root / "data" / "banco.xlsx"
+    metadata = pd.read_excel(excel_path, sheet_name="Banco de Dados Positivo-Negativ").copy()
+    metadata["numero_amostra"] = metadata["numero_amostra"].astype(str)
+    return metadata
+
+
+def _finalize_probability_ranking(
+    ranking_df: pd.DataFrame,
+    *,
+    decision_threshold: float,
+    decision_threshold_name: str,
+    class_names: Sequence[str] = DEFAULT_CLASS_NAMES,
+) -> pd.DataFrame:
+    if ranking_df.empty:
+        columns = [
+            "rank",
+            "numero_amostra",
+            "prob_pos",
+            "prob_neg",
+            "pred_label_threshold",
+            "decision_threshold",
+            "decision_threshold_name",
+            "latitude_wgs84_decimal",
+            "longitude_wgs84_decimal",
+            "classe_balanceamento",
+            "litologia_padronizada",
+            "path",
+        ]
+        return pd.DataFrame(columns=columns)
+
+    df = ranking_df.copy()
+    df["numero_amostra"] = df["numero_amostra"].astype(str)
+    df["prob_pos"] = pd.to_numeric(df["prob_pos"], errors="coerce").fillna(0.0).clip(0.0, 1.0)
+    df["prob_neg"] = 1.0 - df["prob_pos"]
+
+    pred_idx = (df["prob_pos"] >= float(decision_threshold)).astype(int)
+    df["pred_label_threshold"] = pred_idx.map({0: class_names[0], 1: class_names[1]})
+    df["decision_threshold"] = float(decision_threshold)
+    df["decision_threshold_name"] = str(decision_threshold_name)
+
+    df = df.sort_values(["prob_pos", "numero_amostra"], ascending=[False, True]).reset_index(drop=True)
+    if "rank" in df.columns:
+        df = df.drop(columns=["rank"])
+    df.insert(0, "rank", np.arange(1, len(df) + 1, dtype=int))
+
+    preferred_columns = [
+        "rank",
+        "numero_amostra",
+        "prob_pos",
+        "prob_neg",
+        "pred_label_threshold",
+        "decision_threshold",
+        "decision_threshold_name",
+        "latitude_wgs84_decimal",
+        "longitude_wgs84_decimal",
+        "classe_balanceamento",
+        "litologia_padronizada",
+        "path",
+    ]
+    ordered_columns = preferred_columns + [col for col in df.columns if col not in preferred_columns]
+    return df[ordered_columns]
+
+
+def _cache_supports_probability_ranking(df: pd.DataFrame) -> bool:
+    required_columns = {"numero_amostra", "prob_pos", "path"}
+    return required_columns.issubset(df.columns)
+
+
+def _load_transfer_bundle_for_threshold(
+    project_root: Path,
+    threshold_mode: str,
+    *,
+    model_key: str,
+) -> TransferInferenceBundle:
+    normalized_model_key = _normalize_model_key(model_key)
+    if normalized_model_key == "a11_pipeline_e2e":
+        if threshold_mode == "threshold_0.5":
+            return load_a11_transfer_inference_bundle(
+                project_root=project_root,
+                decision_threshold=0.5,
+                decision_threshold_name="threshold_0.5",
+            )
+        return load_a11_transfer_inference_bundle(
+            project_root=project_root,
+        )
+
+    if threshold_mode == "threshold_0.5":
+        return load_transfer_inference_bundle(
+            project_root=project_root,
+            decision_threshold=0.5,
+            decision_threshold_name="threshold_0.5",
+        )
+
+    return load_transfer_inference_bundle(
+        project_root=project_root,
+        decision_threshold_name=threshold_mode,
+    )
+
+
+def build_dataset_probability_ranking(
+    project_root: str | Path | None = None,
+    threshold_mode: str = "threshold_f1",
+    force_refresh: bool = False,
+    *,
+    model_key: str = "a08_transfer_learning",
+    chunksize: int = 32,
+    batch_size: int = 32,
+) -> pd.DataFrame:
+    """
+    Gera ranking completo da base `pixels_dataset.csv` usando o modelo selecionado.
+    """
+    root = resolve_project_root(project_root)
+    normalized_model_key = _normalize_model_key(model_key)
+    cache_path = _ranking_cache_path(root, model_key=normalized_model_key)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+    decision_threshold, decision_threshold_name = _resolve_threshold_config(
+        root,
+        threshold_mode=threshold_mode,
+        model_key=normalized_model_key,
+    )
+
+    if cache_path.exists() and not force_refresh:
+        cached_df = pd.read_csv(cache_path)
+        if _cache_supports_probability_ranking(cached_df):
+            return _finalize_probability_ranking(
+                cached_df,
+                decision_threshold=decision_threshold,
+                decision_threshold_name=decision_threshold_name,
+            )
+
+    bundle = _load_transfer_bundle_for_threshold(
+        root,
+        threshold_mode,
+        model_key=normalized_model_key,
+    )
+    metadata = _load_points_metadata(root)
+    predictions: list[pd.DataFrame] = []
+
+    reader = pd.read_csv(bundle.dataset_csv, chunksize=int(chunksize))
+    for chunk_df in reader:
+        if chunk_df.empty:
+            continue
+
+        x_chunk, _ = dataframe_to_cnn_tensor(
+            chunk_df,
+            data_format="channels_last",
+            dtype=np.float32,
+        )
+        x_ready, _ = adapt_cnn_input_tensor(
+            x_chunk,
+            data_format="channels_last",
+            resize_to=bundle.target_size,
+            target_channels=bundle.target_channels,
+            normalization=bundle.normalization,
+            normalizer=bundle.normalizer,
+        )
+        raw_pred = bundle.model.predict(x_ready, batch_size=int(batch_size), verbose=0)
+        prob_pos = np.clip(np.asarray(raw_pred, dtype=float).reshape(-1), 0.0, 1.0)
+
+        predictions.append(
+            pd.DataFrame(
+                {
+                    "numero_amostra": chunk_df["path"].map(_extract_sample_id_from_path).astype(str),
+                    "path": chunk_df["path"].astype(str),
+                    "prob_pos": prob_pos.astype(float),
+                }
+            )
+        )
+
+    if not predictions:
+        raise RuntimeError("Nao foi possivel gerar o ranking: dataset sem linhas processaveis.")
+
+    ranking_base = pd.concat(predictions, ignore_index=True)
+    ranking_base = ranking_base[ranking_base["numero_amostra"] != ""].copy()
+    ranking_base = (
+        ranking_base.groupby("numero_amostra", as_index=False)
+        .agg(
+            {
+                "prob_pos": "mean",
+                "path": "first",
+            }
+        )
+    )
+
+    ranking_base["numero_amostra"] = ranking_base["numero_amostra"].astype(str)
+    ranking_base = ranking_base.merge(metadata, on="numero_amostra", how="left")
+
+    final_df = _finalize_probability_ranking(
+        ranking_base,
+        decision_threshold=decision_threshold,
+        decision_threshold_name=decision_threshold_name,
+        class_names=bundle.class_names,
+    )
+    final_df.to_csv(cache_path, index=False)
+    return final_df
 
 
 def assess_chip_quality(
@@ -385,7 +639,6 @@ def load_transfer_inference_bundle(
     dataset_csv_path = Path(dataset_csv) if dataset_csv is not None else root / "data" / "pixels_dataset.csv"
     codes_path = Path(extracted_codes_json) if extracted_codes_json is not None else root / "data" / "extracted_codes.json"
     model_file = Path(model_path) if model_path is not None else root / "outputs" / "a08_transfer_learning" / "best_model.keras"
-
     resolved_threshold, resolved_threshold_name = _resolve_threshold_from_metrics(
         root,
         threshold_name=decision_threshold_name,
@@ -452,7 +705,7 @@ def load_a11_transfer_inference_bundle(
         else float(decision_threshold)
     )
     resolved_threshold_name = (
-        decision_threshold_name if decision_threshold is not None else "threshold_default"
+        "threshold_default" if decision_threshold is None else str(decision_threshold_name)
     )
 
     return _build_transfer_inference_bundle(

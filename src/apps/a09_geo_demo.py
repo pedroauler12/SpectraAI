@@ -8,9 +8,10 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
+
 THRESHOLD_OPTIONS = {
-    "threshold_f1": "Threshold do artefato (recomendado)",
-    "threshold_0.5": "0.5 (corte fixo)",
+    "artifact_default": "Threshold do artefato (recomendado)",
+    "threshold_0.5": "0.5 (mais conservador)",
 }
 
 QUALITY_MESSAGES = {
@@ -57,7 +58,7 @@ def build_model_catalog(project_root: Path) -> dict[str, dict[str, object]]:
             "label": "Transfer Learning (A08)",
             "available": a08_model_path.exists(),
             "description": (
-                "Modelo geoespacial legado do A08 para inferencia direta em chips ASTER 9 bandas."
+                "Modelo geoespacial pronto para inferencia direta em chips ASTER 9 bandas."
                 if a08_model_path.exists()
                 else f"Artefato ausente: {a08_model_path}"
             ),
@@ -238,6 +239,7 @@ with st.sidebar:
         - O A11 usa o artefato final salvo em `artefatos/a11_pipeline_e2e/outputs/models/`.
         - O A08 continua disponivel como baseline geoespacial anterior.
         - O app mostra RGB natural e false-color mineralogico.
+        - A página "Ranking de Probabilidades" mostra o ranking completo das amostras.
         - MLP/SVM/RF ainda exigem artefatos extras de preprocessamento.
         """
     )
@@ -259,7 +261,7 @@ with map_col:
     map_state = st_folium(
         fmap,
         key="spectraai_folium_map",
-        width=None,
+        width="stretch",
         height=620,
         returned_objects=["last_clicked"],
     )
