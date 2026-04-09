@@ -1,8 +1,8 @@
 """
-Camada reutilizavel para inferencia geoespacial com o modelo de transfer learning.
+Camada reutilizavel para inferencia geoespacial com modelos transfer learning.
 
 Este modulo conecta:
-- modelo treinado no A08;
+- artefatos treinados no A08 e no A11;
 - reconstrucao do normalizador de treino;
 - pre-processamento de chips ASTER multibanda;
 - busca e recorte de dados ASTER via EarthData.
@@ -188,6 +188,76 @@ def save_preview_png(preview_rgb: np.ndarray, output_path: str | Path) -> Path:
     return out_path
 
 
+def _resolve_config_path(base_dir: Path, path_value: str | Path) -> Path:
+    path = Path(path_value)
+    if path.is_absolute():
+        return path
+    return (base_dir / path).resolve()
+
+
+def _build_transfer_inference_bundle(
+    *,
+    root: Path,
+    model_file: Path,
+    dataset_csv_path: Path,
+    codes_path: Path,
+    test_size: float,
+    val_size: float,
+    seed: int,
+    target_size: tuple[int, int],
+    target_channels: int,
+    normalization: str,
+    class_names: tuple[str, str],
+    decision_threshold: float,
+    decision_threshold_name: str,
+    model_name: str,
+) -> TransferInferenceBundle:
+    if not dataset_csv_path.exists():
+        raise FileNotFoundError(f"Arquivo nao encontrado: {dataset_csv_path}")
+    if not codes_path.exists():
+        raise FileNotFoundError(f"Arquivo nao encontrado: {codes_path}")
+    if not model_file.exists():
+        raise FileNotFoundError(f"Arquivo nao encontrado: {model_file}")
+
+    df = pd.read_csv(dataset_csv_path)
+    split_data = prepare_grouped_cnn_splits(
+        df,
+        extracted_codes_path=codes_path,
+        data_format="channels_last",
+        test_size=float(test_size),
+        val_size=float(val_size),
+        seed=int(seed),
+    )
+
+    x_train = np.asarray(split_data["X_train"], dtype=np.float32)
+    normalizer = fit_channel_normalizer(
+        x_train,
+        method=normalization,
+        data_format="channels_last",
+    )
+
+    model = _load_keras_model(model_file)
+    resolved_target_channels = int(
+        target_channels or split_data.get("shape_info", {}).get("n_channels", x_train.shape[-1])
+    )
+    return TransferInferenceBundle(
+        project_root=root,
+        model=model,
+        model_name=model_name,
+        normalizer=normalizer,
+        target_size=tuple(int(v) for v in target_size),
+        target_channels=resolved_target_channels,
+        normalization=normalization,
+        class_names=class_names,
+        decision_threshold=float(decision_threshold),
+        decision_threshold_name=decision_threshold_name,
+        seed=int(seed),
+        dataset_csv=dataset_csv_path,
+        extracted_codes_json=codes_path,
+        model_path=model_file,
+    )
+
+
 def _resolve_threshold_from_metrics(
     project_root: Path,
     *,
@@ -316,32 +386,6 @@ def load_transfer_inference_bundle(
     codes_path = Path(extracted_codes_json) if extracted_codes_json is not None else root / "data" / "extracted_codes.json"
     model_file = Path(model_path) if model_path is not None else root / "outputs" / "a08_transfer_learning" / "best_model.keras"
 
-    if not dataset_csv_path.exists():
-        raise FileNotFoundError(f"Arquivo nao encontrado: {dataset_csv_path}")
-    if not codes_path.exists():
-        raise FileNotFoundError(f"Arquivo nao encontrado: {codes_path}")
-    if not model_file.exists():
-        raise FileNotFoundError(f"Arquivo nao encontrado: {model_file}")
-
-    df = pd.read_csv(dataset_csv_path)
-    split_data = prepare_grouped_cnn_splits(
-        df,
-        extracted_codes_path=codes_path,
-        data_format="channels_last",
-        test_size=test_size,
-        val_size=val_size,
-        seed=seed,
-    )
-
-    x_train = np.asarray(split_data["X_train"], dtype=np.float32)
-    normalizer = fit_channel_normalizer(
-        x_train,
-        method=normalization,
-        data_format="channels_last",
-    )
-
-    model = _load_keras_model(model_file)
-    target_channels = int(split_data["shape_info"]["n_channels"])
     resolved_threshold, resolved_threshold_name = _resolve_threshold_from_metrics(
         root,
         threshold_name=decision_threshold_name,
@@ -351,21 +395,81 @@ def load_transfer_inference_bundle(
         resolved_threshold = float(decision_threshold)
         resolved_threshold_name = decision_threshold_name or "manual"
 
-    return TransferInferenceBundle(
-        project_root=root,
-        model=model,
-        model_name="Transfer Learning (A08)",
-        normalizer=normalizer,
-        target_size=tuple(int(v) for v in target_size),
-        target_channels=target_channels,
+    return _build_transfer_inference_bundle(
+        root=root,
+        model_file=model_file,
+        dataset_csv_path=dataset_csv_path,
+        codes_path=codes_path,
+        test_size=test_size,
+        val_size=val_size,
+        seed=seed,
+        target_size=target_size,
+        target_channels=9,
         normalization=normalization,
         class_names=class_names,
-        decision_threshold=float(resolved_threshold),
+        decision_threshold=resolved_threshold,
         decision_threshold_name=resolved_threshold_name,
-        seed=int(seed),
-        dataset_csv=dataset_csv_path,
-        extracted_codes_json=codes_path,
-        model_path=model_file,
+        model_name="Transfer Learning (A08)",
+    )
+
+
+def load_a11_transfer_inference_bundle(
+    project_root: str | Path | None = None,
+    *,
+    config_path: str | Path | None = None,
+    model_path: str | Path | None = None,
+    class_names: tuple[str, str] = DEFAULT_CLASS_NAMES,
+    decision_threshold: float | None = None,
+    decision_threshold_name: str = "threshold_default",
+) -> TransferInferenceBundle:
+    """
+    Carrega o modelo final do A11 a partir do config oficial do artefato.
+    """
+    import yaml
+
+    root = resolve_project_root(project_root)
+    resolved_config_path = (
+        Path(config_path)
+        if config_path is not None
+        else root / "artefatos" / "a11_pipeline_e2e" / "config.yaml"
+    )
+    resolved_config_path = resolved_config_path.resolve()
+    if not resolved_config_path.exists():
+        raise FileNotFoundError(f"Arquivo nao encontrado: {resolved_config_path}")
+
+    with resolved_config_path.open("r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+
+    config_dir = resolved_config_path.parent
+    dataset_csv_path = _resolve_config_path(config_dir, config["paths"]["dataset_csv"])
+    codes_path = _resolve_config_path(config_dir, config["paths"]["extracted_codes_json"])
+    outputs_models_dir = _resolve_config_path(config_dir, config["paths"]["outputs_models"])
+    model_file = Path(model_path).resolve() if model_path is not None else outputs_models_dir / "best_model.keras"
+
+    resolved_threshold = (
+        float(config["evaluation"]["threshold_default"])
+        if decision_threshold is None
+        else float(decision_threshold)
+    )
+    resolved_threshold_name = (
+        decision_threshold_name if decision_threshold is not None else "threshold_default"
+    )
+
+    return _build_transfer_inference_bundle(
+        root=root,
+        model_file=model_file,
+        dataset_csv_path=dataset_csv_path,
+        codes_path=codes_path,
+        test_size=float(config["data"]["test_size"]),
+        val_size=float(config["data"]["val_size"]),
+        seed=int(config["seed"]),
+        target_size=tuple(int(v) for v in config["model"]["resize_to"]),
+        target_channels=int(config["data"]["num_bands"]),
+        normalization=str(config["data"]["normalization_method"]),
+        class_names=class_names,
+        decision_threshold=resolved_threshold,
+        decision_threshold_name=resolved_threshold_name,
+        model_name="Pipeline Final (A11)",
     )
 
 

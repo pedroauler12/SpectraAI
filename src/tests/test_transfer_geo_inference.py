@@ -19,6 +19,7 @@ def test_predict_chip_array_basic(tmp_path: Path):
     bundle = TransferInferenceBundle(
         project_root=tmp_path,
         model=DummyModel(),
+        model_name="Dummy",
         normalizer={
             "method": "zscore",
             "data_format": "channels_last",
@@ -30,6 +31,7 @@ def test_predict_chip_array_basic(tmp_path: Path):
         normalization="zscore",
         class_names=("Negativo", "Positivo"),
         decision_threshold=0.5,
+        decision_threshold_name="threshold_0.5",
         seed=42,
         dataset_csv=tmp_path / "pixels_dataset.csv",
         extracted_codes_json=tmp_path / "extracted_codes.json",
@@ -70,6 +72,7 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
     bundle = TransferInferenceBundle(
         project_root=tmp_path,
         model=DummyModel(),
+        model_name="Dummy",
         normalizer={
             "method": "zscore",
             "data_format": "channels_last",
@@ -81,6 +84,7 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
         normalization="zscore",
         class_names=("Negativo", "Positivo"),
         decision_threshold=0.5,
+        decision_threshold_name="threshold_0.5",
         seed=42,
         dataset_csv=tmp_path / "pixels_dataset.csv",
         extracted_codes_json=tmp_path / "extracted_codes.json",
@@ -138,3 +142,79 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
     assert result.pred_label == "Positivo"
     assert result.chip_path is not None
     assert result.preview_png_path is not None
+
+
+def test_load_a11_transfer_inference_bundle_uses_artifact_config(tmp_path: Path, monkeypatch):
+    np = pytest.importorskip("numpy")
+
+    from src.inference import transfer_geo_inference as geo
+
+    project_root = tmp_path / "project"
+    config_dir = project_root / "artefatos" / "a11_pipeline_e2e"
+    outputs_models = config_dir / "outputs" / "models"
+    data_dir = project_root / "data"
+    (project_root / "src").mkdir(parents=True, exist_ok=True)
+    config_dir.mkdir(parents=True, exist_ok=True)
+    outputs_models.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    (data_dir / "pixels_dataset.csv").write_text("dummy\n1\n", encoding="utf-8")
+    (data_dir / "extracted_codes.json").write_text("{}", encoding="utf-8")
+    (outputs_models / "best_model.keras").write_text("fake-model", encoding="utf-8")
+    (config_dir / "config.yaml").write_text(
+        "\n".join(
+            [
+                "seed: 7",
+                "paths:",
+                "  dataset_csv: ../../data/pixels_dataset.csv",
+                "  extracted_codes_json: ../../data/extracted_codes.json",
+                "  outputs_models: outputs/models",
+                "data:",
+                "  num_bands: 9",
+                "  normalization_method: zscore",
+                "  test_size: 0.25",
+                "  val_size: 0.10",
+                "model:",
+                "  resize_to: [160, 160]",
+                "evaluation:",
+                "  threshold_default: 0.42",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    fake_model = object()
+
+    def fake_prepare_grouped_cnn_splits(df, **kwargs):
+        assert len(df) == 1
+        assert Path(kwargs["extracted_codes_path"]).name == "extracted_codes.json"
+        return {
+            "X_train": np.ones((2, 16, 16, 9), dtype=np.float32),
+            "shape_info": {"n_channels": 9},
+        }
+
+    def fake_fit_channel_normalizer(x_train, method, data_format):
+        assert x_train.shape == (2, 16, 16, 9)
+        assert method == "zscore"
+        assert data_format == "channels_last"
+        return {
+            "method": method,
+            "data_format": data_format,
+            "mean": np.zeros((1, 1, 1, 9), dtype=np.float32),
+            "std": np.ones((1, 1, 1, 9), dtype=np.float32),
+        }
+
+    monkeypatch.setattr(geo, "prepare_grouped_cnn_splits", fake_prepare_grouped_cnn_splits)
+    monkeypatch.setattr(geo, "fit_channel_normalizer", fake_fit_channel_normalizer)
+    monkeypatch.setattr(geo, "_load_keras_model", lambda path: fake_model)
+
+    bundle = geo.load_a11_transfer_inference_bundle(project_root=project_root)
+
+    assert bundle.model is fake_model
+    assert bundle.model_name == "Pipeline Final (A11)"
+    assert bundle.target_size == (160, 160)
+    assert bundle.target_channels == 9
+    assert bundle.normalization == "zscore"
+    assert bundle.decision_threshold == pytest.approx(0.42)
+    assert bundle.decision_threshold_name == "threshold_default"
+    assert bundle.model_path == outputs_models / "best_model.keras"

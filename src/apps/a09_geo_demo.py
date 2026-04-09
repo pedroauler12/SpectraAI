@@ -8,26 +8,9 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
-
-MODEL_CATALOG = {
-    "a08_transfer_learning": {
-        "label": "Transfer Learning (A08)",
-        "available": True,
-        "description": "Modelo geoespacial pronto para inferencia direta em chips ASTER 9 bandas.",
-    },
-    "a03_mlp_pca": {
-        "label": "MLP PCA (A03)",
-        "available": False,
-        "description": (
-            "Modelo salvo, mas indisponivel no app porque o scaler/PCA do treino "
-            "nao foram exportados como artefatos."
-        ),
-    },
-}
-
 THRESHOLD_OPTIONS = {
-    "threshold_f1": "threshold_f1 (recomendado)",
-    "threshold_0.5": "0.5 (mais conservador)",
+    "threshold_f1": "Threshold do artefato (recomendado)",
+    "threshold_0.5": "0.5 (corte fixo)",
 }
 
 QUALITY_MESSAGES = {
@@ -56,6 +39,43 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 
+def build_model_catalog(project_root: Path) -> dict[str, dict[str, object]]:
+    a11_model_path = project_root / "artefatos" / "a11_pipeline_e2e" / "outputs" / "models" / "best_model.keras"
+    a08_model_path = project_root / "outputs" / "a08_transfer_learning" / "best_model.keras"
+
+    return {
+        "a11_pipeline_e2e": {
+            "label": "Pipeline Final (A11)",
+            "available": a11_model_path.exists(),
+            "description": (
+                "Modelo final treinado no pipeline end-to-end do A11."
+                if a11_model_path.exists()
+                else f"Artefato ausente: {a11_model_path}"
+            ),
+        },
+        "a08_transfer_learning": {
+            "label": "Transfer Learning (A08)",
+            "available": a08_model_path.exists(),
+            "description": (
+                "Modelo geoespacial legado do A08 para inferencia direta em chips ASTER 9 bandas."
+                if a08_model_path.exists()
+                else f"Artefato ausente: {a08_model_path}"
+            ),
+        },
+        "a03_mlp_pca": {
+            "label": "MLP PCA (A03)",
+            "available": False,
+            "description": (
+                "Modelo salvo, mas indisponivel no app porque o scaler/PCA do treino "
+                "nao foram exportados como artefatos."
+            ),
+        },
+    }
+
+
+MODEL_CATALOG = build_model_catalog(PROJECT_ROOT)
+
+
 st.set_page_config(
     page_title="SpectraAI - Demo Geoespacial ASTER",
     layout="wide",
@@ -73,13 +93,27 @@ def load_points_frame(project_root: Path) -> pd.DataFrame:
 
 @st.cache_resource(show_spinner=True)
 def get_inference_bundle(project_root: Path, model_key: str, threshold_mode: str):
+    from inference import (
+        load_a11_transfer_inference_bundle,
+        load_transfer_inference_bundle,
+    )
+
+    if model_key == "a11_pipeline_e2e":
+        if threshold_mode == "threshold_0.5":
+            return load_a11_transfer_inference_bundle(
+                project_root=project_root,
+                decision_threshold=0.5,
+                decision_threshold_name="threshold_0.5",
+            )
+        return load_a11_transfer_inference_bundle(
+            project_root=project_root,
+        )
+
     if model_key != "a08_transfer_learning":
         raise RuntimeError(
             "Este modelo ainda nao esta pronto para a demo geoespacial. "
-            "Use o Transfer Learning (A08)."
+            "Use o Pipeline Final (A11) ou o Transfer Learning (A08)."
         )
-
-    from inference import load_transfer_inference_bundle
 
     if threshold_mode == "threshold_0.5":
         return load_transfer_inference_bundle(
@@ -154,7 +188,7 @@ def make_base_map(points_df: pd.DataFrame, selected_point: tuple[float, float] |
 
 st.title("SpectraAI - Demo Geoespacial ASTER")
 st.caption(
-    "Versao 2: mapa clicavel, threshold otimizado, previews RGB/false-color e "
+    "Mapa clicavel, modelos A11/A08, previews RGB/false-color e "
     "checagem simples de qualidade do chip."
 )
 
@@ -200,10 +234,10 @@ with st.sidebar:
 
     st.markdown(
         """
-        **Notas da v2**
-        - O mapa abre antes do carregamento do modelo.
+        **Notas**
+        - O A11 usa o artefato final salvo em `artefatos/a11_pipeline_e2e/outputs/models/`.
+        - O A08 continua disponivel como baseline geoespacial anterior.
         - O app mostra RGB natural e false-color mineralogico.
-        - O threshold otimizado vem do A09 quando disponivel.
         - MLP/SVM/RF ainda exigem artefatos extras de preprocessamento.
         """
     )
