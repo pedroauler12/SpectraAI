@@ -214,6 +214,53 @@ python run_pipeline.py
 ```bash
 jupyter notebook artefatos/a02_baseline_classico/a02_baseline_classico.ipynb
 ```
+
+### 6️⃣ Executar pipeline final (A11) e consolidar métricas
+
+#### Opção A: Usar Makefile (recomendado)
+```bash
+# Executar o pipeline completo do A11
+make run-a11
+
+# Consolidar métricas em CSV padronizado
+make consolidate-a11-metrics
+
+# Resultado: outputs/a11_metrics_final.csv
+```
+
+#### Opção B: Executar manualmente
+```bash
+# Rodar o pipeline A11
+python -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
+
+# Consolidar métricas do A11 em formato padronizado
+python scripts/consolidate_a11_metrics.py
+
+# Resultado: 
+#   - outputs/a11_metrics_final.csv (formato tabulado)
+#   - outputs/a11_metrics_final.json (formato estruturado)
+```
+
+**Saída gerada pelo A11:**
+| Arquivo | Localização | Descrição |
+|---------|------------|-----------|
+| `summary.json` | `artefatos/a11_pipeline_e2e/outputs/metrics/` | Resumo completo: métricas, configuração, timestamps |
+| `summary.csv` | `artefatos/a11_pipeline_e2e/outputs/metrics/` | Idem em CSV |
+| `best_model.keras` | `artefatos/a11_pipeline_e2e/outputs/models/` | Pesos do modelo treinado (~19 MB) |
+| `history.json` | `artefatos/a11_pipeline_e2e/outputs/models/` | Histórico de loss/accuracy por época |
+| `test_predictions.csv` | `artefatos/a11_pipeline_e2e/outputs/predictions/` | Predições no conjunto de teste |
+
+**Métricas consolidadas pelo script:**
+```
+Acurácia:           0.8814
+Precisão:           0.8333
+Recall:             0.8696
+F1-Score:           0.8511
+ROC-AUC:            0.9348
+PR-AUC:             0.8747
+Balanced Accuracy:  0.8792
+```
+
 ---
 
 ## 📊 Artefatos por Sprint
