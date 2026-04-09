@@ -156,6 +156,15 @@ python3 -m artefatos.a11_pipeline_e2e \
   --config artefatos/a11_pipeline_e2e/config.yaml
 ```
 
+Para executar o pipeline e, em seguida, reproduzir tambem o notebook oficial de
+analise de forma headless:
+
+```bash
+python3 -m artefatos.a11_pipeline_e2e \
+  --config artefatos/a11_pipeline_e2e/config.yaml \
+  --execute-notebook
+```
+
 ## Modo rapido
 
 Para smoke tests e validacao rapida:
@@ -173,6 +182,7 @@ python3 -m artefatos.a11_pipeline_e2e \
 - `--skip-train`: reutiliza `outputs/models/best_model.keras` ja salvo
 - `--skip-inference`: pula exportacao de predicoes e visualizacoes finais
 - `--output-dir`: salva os outputs em outro diretorio
+- `--execute-notebook`: executa tambem `notebooks/a11_pipeline_e2e.ipynb` e salva uma copia executada em `outputs/notebooks/`
 
 ## Resultados gerados automaticamente
 
@@ -231,6 +241,9 @@ Para reproduzir os experimentos do A11:
 3. execute o comando oficial a partir da raiz do repositorio;
 4. verifique os arquivos gerados em `artefatos/a11_pipeline_e2e/outputs/`.
 
+Se voce tambem precisar reproduzir os graficos, tabelas e artefatos analiticos
+do notebook oficial, use o mesmo comando com `--execute-notebook`.
+
 ## Politica de outputs
 
 Os arquivos em `outputs/` sao gerados automaticamente e podem ser
@@ -263,7 +276,7 @@ resultados. Ele cobre:
 - **Interpretabilidade:** Grad-CAM, saliency maps, importancia espectral por banda, teste de consistencia
 - **Comparacao com baseline:** Random Forest vs Transfer Learning
 
-Para executar o notebook:
+Para executar o notebook interativamente:
 
 ```bash
 cd /caminho/para/g01
@@ -271,11 +284,13 @@ jupyter notebook artefatos/a11_pipeline_e2e/notebooks/a11_pipeline_e2e.ipynb
 ```
 
 O notebook gera visualizacoes adicionais em `outputs/notebook_visualizations/`.
-A reproducao oficial da entrega pode tambem ser feita pela CLI, usando o
-comando por modulo documentado acima.
+A reproducao do conteudo do notebook tambem pode ser feita pela CLI com
+`--execute-notebook`, que salva uma copia executada do arquivo em
+`outputs/notebooks/a11_pipeline_e2e.executed.ipynb`.
 
 ## Troubleshooting
 
 - `ModuleNotFoundError: artefatos`: execute via `python3 -m artefatos.a11_pipeline_e2e`.
 - `FileNotFoundError` para dataset ou labels: confirme os caminhos definidos em `config.yaml`.
 - Falta de dependencias: reinstale com `python3 -m pip install -r artefatos/a11_pipeline_e2e/requirements.txt`.
+- Falha ao executar o notebook pela CLI: confirme que `nbformat`, `nbconvert` e `ipykernel` foram instalados junto com o `requirements.txt`.
