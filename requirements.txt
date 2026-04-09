@@ -1,0 +1,13 @@
+numpy
+pandas
+openpyxl
+rasterio
+matplotlib
+seaborn
+scikit-learn
+pyproj
+earthaccess
+tensorflow
+streamlit
+folium
+streamlit-folium

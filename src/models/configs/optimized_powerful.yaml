@@ -28,7 +28,7 @@ data:
   normalization_method: zscore
 
 output:
-  models_dir: outputs/trained_models/
+  models_dir: models/trained_models/
   logs_dir: outputs/training_logs/
   save_model: true
   save_history: true

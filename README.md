@@ -37,6 +37,7 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 - Eduardo Rizk
 - Giovanna Vieira
 - Larissa Souza
+- Lucas Jorge
 - Mateus Pereira
 - Pedro Auler
 
@@ -88,15 +89,23 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
 ├── src/                   # código modular reutilizável (.py)
+│   ├── apps/              # aplicações interativas (Streamlit)
+│   ├── evaluation/        # módulo de avaliação de modelos
+│   └── tests/             # testes automatizados (pytest)
 ├── notebooks/             # exploração, experimentos e narrativa
 ├── data/                  # dados de entrada
 ├── models/                # modelos treinados/checkpoints
-├── outputs/               # métricas, gráficos e resultados gerados
+│   └── trained_models/    # experimentos de treino (configs e histórico)
+├── outputs/               # resultados gerados automaticamente
+│   ├── figures/           # gráficos e visualizações
+│   ├── metrics/           # métricas e JSONs de avaliação
+│   └── predictions/       # predições exportadas
 ├── slides/                # apresentações do projeto
 ├── assets/                # imagens, logos e recursos estáticos
-├── testes/                # testes automatizados
 ├── Makefile
-├── requirements-dev.txt
+├── run_pipeline.py        # utilitário de execução iterativa do pipeline
+├── requirements.txt       # dependências de produção
+├── requirements-dev.txt   # dependências de desenvolvimento (pytest, etc.)
 └── README.md
 ```
 
@@ -175,6 +184,9 @@ cd <repo>
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -U pip
+# produção
+python -m pip install -r requirements.txt
+# desenvolvimento (inclui pytest, pytest-cov)
 python -m pip install -r requirements-dev.txt
 ```
 
@@ -188,7 +200,17 @@ make test
 jupyter notebook
 ```
 
-### 5️⃣ Executar baseline clássico (A02)
+### 5️⃣ Executar pipeline iterativo de desenvolvimento
+```bash
+python run_pipeline.py
+```
+
+> Para a entrega oficial reprodutível (A11), use o comando abaixo (ver [Entrega A11](#entrega-a11)):
+> ```bash
+> python3 -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
+> ```
+
+### 6️⃣ Executar baseline clássico (A02)
 ```bash
 jupyter notebook artefatos/a02_baseline_classico/a02_baseline_classico.ipynb
 ```

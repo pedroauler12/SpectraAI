@@ -59,7 +59,7 @@ flowchart TD
     PREDICT --> GRAFICOS
     METRICS --> GRAFICOS
 
-    RUN[" src/run.ipynb - Orquestrador"] -.-> F1
+    RUN[" notebooks/run.ipynb - Orquestrador"] -.-> F1
     RUN -.-> F3
     RUN -.-> F7
     RUN -.-> F9
@@ -152,6 +152,6 @@ flowchart TD
 
 | Arquivo     | Subpasta | Função                                                            |
 | ----------- | -------- | ----------------------------------------------------------------- |
-| `run.ipynb` | `src/`   | Pipeline principal end-to-end; importa e executa todos os módulos |
+| `run.ipynb` | `notebooks/`   | Pipeline principal end-to-end; importa e executa todos os módulos |
 
 ---
