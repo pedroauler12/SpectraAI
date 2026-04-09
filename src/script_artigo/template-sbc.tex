@@ -1,0 +1,146 @@
+\documentclass[12pt,twocolumn]{article}
+
+\usepackage{enumerate}
+\usepackage{indentfirst}
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage{float}
+\usepackage[brazil]{babel}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{tabularx}
+
+% ============================
+% Forçar seções em NEGRITO via titlesec (já carregado pelo sbc-template)
+% ============================
+\titleformat{\section}
+  {\normalfont\fontsize{13}{17}\selectfont\bfseries\boldmath}{{\thesection}.}{0.5em}{}
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\boldmath}{{\thesubsection}.}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}{{\thesubsubsection}.}{0.5em}{}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt}
+\titlespacing*{\subsubsection}{0pt}{6pt}{2pt}
+
+\renewcommand{\email}[1]{\\\mbox{}\\[-6pt]\footnotesize\ttfamily\begin{tabular}{c}#1\end{tabular}}
+
+% ============================
+% Espaçamento entre colunas (uniforme em TODAS as páginas)
+% ============================
+\setlength{\columnsep}{0.8cm}
+
+% pandoc tight_list support
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% scale images to fit column
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\columnwidth\columnwidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+% Reduzir espaçamento vertical de figuras
+\setlength{\intextsep}{2pt plus 1pt minus 1pt}
+\setlength{\floatsep}{2pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{2pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{0pt}
+
+% pandoc bounded image support
+\newcommand{\pandocbounded}[1]{#1}
+
+% longtable replacement handled by sed in build script
+
+% Redefinir abstract e resumo para duas colunas (sem margens internas extras)
+\makeatletter
+\renewenvironment{abstract}{%
+      \list{}{\advance\topsep by6pt\relax
+      \leftmargin=0cm
+      \labelwidth=\z@
+      \listparindent=\z@
+      \itemindent\listparindent
+      \rightmargin\leftmargin}\item[\hskip\labelsep
+                                    \bfseries\itshape Abstract.]\itshape}%
+      {\endlist}
+
+\renewenvironment{resumo}{%
+      \list{}{\advance\topsep by6pt\relax
+      \leftmargin=0cm
+      \labelwidth=\z@
+      \listparindent=\z@
+      \itemindent\listparindent
+      \rightmargin\leftmargin}\item[\hskip\labelsep
+                                    \bfseries\itshape Resumo.]\itshape}%
+      {\endlist}
+\makeatother
+
+% Forçar título em coluna única usando \@twocolumnfalse temporário
+\makeatletter
+\renewcommand{\maketitle}{%
+  \twocolumn[%
+    \begin{center}
+    \vspace*{-0.7cm}
+    {\fontsize{16}{20}\selectfont\bfseries\@title\par}
+    \vskip 6pt plus 3pt minus 3pt
+    {\normalsize\textbf{\begin{tabular}[t]{c}\@author\end{tabular}}\par}
+    \vskip 6pt plus 3pt minus 3pt
+    {\normalsize\begin{tabular}[t]{c}\inst{\instnum}\@address\end{tabular}\par}
+    \end{center}
+    \vskip 0.3cm
+  ]%
+}
+\makeatother
+
+% Referências com espaçamento reduzido (fonte padrão mantida)
+\let\oldbibliography\thebibliography
+\renewcommand{\thebibliography}[1]{\oldbibliography{#1}}
+
+\sloppy
+\tolerance=1000
+\emergencystretch=3em
+\hbadness=10000
+\hfuzz=2pt
+
+\title{$title$}
+
+\author{
+Drielly S. Farias\inst{1},
+Eduardo F. Rizk\inst{1},
+Giovanna F. B. Vieira\inst{1},\\
+Larissa M. P. S. Souza\inst{1},
+Lucas R. Jorge\inst{1},
+Mateus B. Pereira\inst{1},\\
+Pedro A. B. Martins\inst{1}
+}
+
+\address{Instituto de Tecnologia e Liderança (Inteli)\\
+  Av. Prof. Almeida Prado, 520 -- Butantã -- 05508-901 -- São Paulo -- SP
+  \email{\{drielly.farias,eduardo.rizk,larissa.souza,giovanna.vieira, \\lucas.jorge,mateus.pereira,pedro.martins\}@sou.inteli.edu.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+$abstract$
+
+\noindent \textbf{Keywords:} $keywords-en$
+\end{abstract}
+
+\begin{resumo}
+$resumo$
+
+\noindent \textbf{Palavras-chave:} $keywords-pt$
+\end{resumo}
+
+$body$
+
+\bibliographystyle{sbc}
+\bibliography{references}
+
+\end{document}
