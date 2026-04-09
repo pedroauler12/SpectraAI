@@ -67,6 +67,21 @@ O pipeline parte do dataset pronto ja existente no projeto:
 Os caminhos sao definidos em `config.yaml` e resolvidos a partir da propria
 pasta do artefato.
 
+## Escopo do artefato
+
+O A11 concentra o entrypoint oficial (`main.py` / `python3 -m
+artefatos.a11_pipeline_e2e`), o `config.yaml`, o README, o notebook de analise
+e a organizacao dos outputs. A implementacao reutiliza modulos centrais do
+projeto localizados em `src/` na raiz do repositorio, em especial para:
+
+- preparacao dos tensores e splits agrupados;
+- treinamento do modelo de transfer learning;
+- inferencia binaria e utilitarios de avaliacao.
+
+Em outras palavras: a reproducao oficial da entrega acontece pela pasta do A11,
+mas ela depende do repositorio completo do projeto, e nao apenas do conteudo
+isolado de `/artefatos/a11_pipeline_e2e/`.
+
 ## Como obter os dados
 
 Os arquivos de entrada **nao estao versionados no repositorio** por conta do
@@ -87,16 +102,19 @@ data/extracted_codes.json       # rotulos binarios (positivo/negativo para terra
 ## Diretorio de execucao
 
 O comando oficial deve ser executado **a partir da raiz do repositorio**
-(onde a pasta `artefatos/` esta visivel). Os caminhos relativos definidos
-em `config.yaml` pressupõem esse diretorio de trabalho:
+(onde a pasta `artefatos/` esta visivel), porque a execucao por modulo precisa
+encontrar tanto o pacote `artefatos` quanto os modulos reutilizados em `src/`.
+Os caminhos declarados em `config.yaml` sao resolvidos a partir do proprio
+arquivo de configuracao:
 
 ```bash
 cd /caminho/para/g01        # raiz do repositorio
 python3 -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
 ```
 
-Executar de outro diretorio resultara em `FileNotFoundError` ao resolver os
-caminhos do dataset.
+Executar fora da raiz pode causar principalmente problemas de descoberta de
+pacotes (`ModuleNotFoundError`). Os caminhos do dataset, por sua vez, sao
+resolvidos relativamente ao `config.yaml`.
 
 ## Requisitos de hardware
 
@@ -119,7 +137,8 @@ Tempo estimado de execucao completa:
 
 ## Instalacao
 
-Crie um ambiente virtual e instale as dependencias do artefato:
+Crie um ambiente virtual e instale as dependencias do artefato e dos modulos
+reutilizados pelo pipeline:
 
 ```bash
 python3 -m venv .venv
@@ -209,25 +228,50 @@ Para reproduzir os experimentos do A11:
 
 1. instale as dependencias com o mesmo interpretador usado na execucao;
 2. confira se `data/pixels_dataset.csv` e `data/extracted_codes.json` estao presentes;
-3. rode o comando oficial do artefato;
+3. execute o comando oficial a partir da raiz do repositorio;
 4. verifique os arquivos gerados em `artefatos/a11_pipeline_e2e/outputs/`.
 
 ## Politica de outputs
 
 Os arquivos em `outputs/` sao gerados automaticamente e podem ser
-reconstruidos. Por isso, o repositorio mantem apenas os `.gitkeep` e nao usa
-os outputs como fonte primaria de evidencia da entrega.
+reconstruidos. O fluxo oficial da entrega considera esses arquivos como
+artefatos derivados, e a evidencia principal de reproducao continua sendo o
+comando documentado neste README.
+
+Alguns outputs de referencia podem aparecer versionados no repositorio para
+inspecao rapida dos resultados mais recentes, mas eles nao substituem a
+execucao do pipeline.
 
 ## Modelo final
 
 O pipeline oficial usa Transfer Learning com MobileNetV2, reaproveitando os
 componentes principais do projeto e padronizando a avaliacao final no conjunto
-de teste.
+de teste. O A11 funciona como uma camada de integracao e orquestracao sobre
+esses componentes reutilizaveis.
 
-## Notebook
+## Notebook de Analise Completa
 
-O notebook `notebooks/a11_pipeline_e2e.ipynb` foi mantido como apoio
-narrativo. A reproducao oficial da entrega deve ser feita pela CLI, usando o
+O notebook `notebooks/a11_pipeline_e2e.ipynb` contem a analise completa do
+projeto com documentacao detalhada, visualizacoes e interpretacao critica dos
+resultados. Ele cobre:
+
+- **Analise exploratoria:** distribuicao de classes, perfil espectral por banda
+- **Arquitetura do modelo:** justificativa do MobileNetV2, channel adapter, 2 fases
+- **Otimizacao de hiperparametros:** busca estruturada (7 experimentos) + cross-validation 3-fold
+- **Avaliacao detalhada:** metricas, matriz de confusao, curvas ROC/PR, threshold sweep
+- **Ranking probabilistico:** ranking de prospectividade com tiers, mapa geoespacial, precision@k
+- **Interpretabilidade:** Grad-CAM, saliency maps, importancia espectral por banda, teste de consistencia
+- **Comparacao com baseline:** Random Forest vs Transfer Learning
+
+Para executar o notebook:
+
+```bash
+cd /caminho/para/g01
+jupyter notebook artefatos/a11_pipeline_e2e/notebooks/a11_pipeline_e2e.ipynb
+```
+
+O notebook gera visualizacoes adicionais em `outputs/notebook_visualizations/`.
+A reproducao oficial da entrega pode tambem ser feita pela CLI, usando o
 comando por modulo documentado acima.
 
 ## Troubleshooting
