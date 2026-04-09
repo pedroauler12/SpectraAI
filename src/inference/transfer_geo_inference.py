@@ -116,6 +116,35 @@ def _predict_positive_probability(bundle: TransferInferenceBundle, batch: np.nda
     return _clip_prob(float(prob_pos))
 
 
+def overlay_activation_heatmap(
+    image_rgb: np.ndarray,
+    heatmap: np.ndarray,
+    *,
+    alpha: float = 0.45,
+    colormap: str = "jet",
+) -> np.ndarray:
+    """
+    Sobrepoe um heatmap normalizado sobre uma imagem RGB.
+    """
+    from matplotlib import colormaps
+
+    base = np.asarray(image_rgb, dtype=np.float32)
+    heat = np.asarray(heatmap, dtype=np.float32)
+
+    if base.ndim != 3 or base.shape[-1] != 3:
+        raise ValueError(f"Esperado image_rgb com shape (H, W, 3), recebido {base.shape}.")
+    if heat.ndim != 2:
+        raise ValueError(f"Esperado heatmap 2D, recebido {heat.shape}.")
+    if base.shape[:2] != heat.shape:
+        raise ValueError("image_rgb e heatmap devem ter a mesma dimensao espacial.")
+
+    heat = np.clip(heat, 0.0, 1.0)
+    cmap = colormaps.get_cmap(colormap)
+    heat_rgb = cmap(heat)[..., :3].astype(np.float32)
+    overlay = (1.0 - float(alpha)) * np.clip(base, 0.0, 1.0) + float(alpha) * heat_rgb
+    return np.clip(overlay, 0.0, 1.0).astype(np.float32, copy=False)
+
+
 def _normalize_preview_band(band: np.ndarray) -> np.ndarray:
     band = np.asarray(band, dtype=np.float32)
     finite_mask = np.isfinite(band)
@@ -342,6 +371,19 @@ def _extract_sample_id_from_path(path_value: str) -> str:
     return match.group(1) if match else ""
 
 
+def _load_dataset_rows_for_sample(dataset_csv: str | Path, sample_id: str) -> pd.DataFrame:
+    dataset_path = Path(dataset_csv)
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Arquivo nao encontrado: {dataset_path}")
+
+    dataset_df = pd.read_csv(dataset_path)
+    extracted_sample_ids = dataset_df["path"].astype(str).map(_extract_sample_id_from_path)
+    filtered_df = dataset_df.loc[extracted_sample_ids == str(sample_id)].copy()
+    if filtered_df.empty:
+        raise ValueError(f"Nenhuma linha encontrada no dataset para a amostra {sample_id}.")
+    return filtered_df
+
+
 def _load_points_metadata(project_root: Path) -> pd.DataFrame:
     excel_path = project_root / "data" / "banco.xlsx"
     metadata = pd.read_excel(excel_path, sheet_name="Banco de Dados Positivo-Negativ").copy()
@@ -539,6 +581,143 @@ def build_dataset_probability_ranking(
     )
     final_df.to_csv(cache_path, index=False)
     return final_df
+
+
+def compute_gradcam_heatmap(
+    model: Any,
+    image: np.ndarray,
+    *,
+    class_index: int = 1,
+) -> np.ndarray:
+    """
+    Calcula o mapa Grad-CAM para uma unica amostra ja pronta para o modelo.
+    """
+    import tensorflow as tf
+    from tensorflow import keras  # type: ignore[import-untyped]
+
+    image_array = np.asarray(image, dtype=np.float32)
+    if image_array.ndim != 3:
+        raise ValueError(f"Esperado tensor 3D (H, W, C), recebido shape={image_array.shape}.")
+
+    img_tensor = tf.expand_dims(tf.cast(image_array, tf.float32), axis=0)
+    last_conv_output = None
+
+    with tf.GradientTape() as tape:
+        x = img_tensor
+        for layer in model.layers:
+            if isinstance(layer, keras.layers.InputLayer):
+                continue
+            x = layer(x)
+            if len(x.shape) == 4:
+                last_conv_output = x
+                tape.watch(last_conv_output)
+        predictions = x
+
+        if last_conv_output is None:
+            raise ValueError("Nenhuma camada convolucional 4D encontrada para Grad-CAM.")
+
+        if predictions.shape[-1] == 1:
+            class_output = 1.0 - predictions[:, 0] if int(class_index) == 0 else predictions[:, 0]
+        else:
+            class_output = predictions[:, int(class_index)]
+
+    grads = tape.gradient(class_output, last_conv_output)
+    if grads is None:
+        raise RuntimeError("Nao foi possivel calcular gradientes para o Grad-CAM.")
+
+    weights = tf.reduce_mean(grads, axis=(0, 1, 2))
+    cam = tf.reduce_sum(last_conv_output[0] * weights, axis=-1).numpy()
+    cam = np.maximum(cam, 0.0)
+    if float(np.max(cam)) > 0.0:
+        cam = cam / float(np.max(cam))
+
+    cam_resized = tf.image.resize(
+        cam[..., np.newaxis],
+        size=(image_array.shape[0], image_array.shape[1]),
+        method="bilinear",
+        antialias=True,
+    ).numpy()[..., 0]
+    return np.clip(cam_resized, 0.0, 1.0).astype(np.float32, copy=False)
+
+
+def generate_dataset_sample_gradcam(
+    sample_id: str,
+    *,
+    project_root: str | Path | None = None,
+    model_key: str = "a11_pipeline_e2e",
+    threshold_mode: str | None = None,
+    class_index: int = 1,
+) -> dict[str, Any]:
+    """
+    Gera Grad-CAM e overlays para uma amostra do dataset consolidado.
+    """
+    root = resolve_project_root(project_root)
+    normalized_model_key = _normalize_model_key(model_key)
+    resolved_threshold_mode = threshold_mode or (
+        "threshold_default" if normalized_model_key == "a11_pipeline_e2e" else "threshold_f1"
+    )
+    bundle = _load_transfer_bundle_for_threshold(
+        root,
+        resolved_threshold_mode,
+        model_key=normalized_model_key,
+    )
+
+    sample_rows = _load_dataset_rows_for_sample(bundle.dataset_csv, sample_id)
+    sample_df = sample_rows.iloc[[0]].copy()
+    raw_tensor, _ = dataframe_to_cnn_tensor(
+        sample_df,
+        data_format="channels_last",
+        dtype=np.float32,
+    )
+    raw_chip = np.asarray(raw_tensor[0], dtype=np.float32)
+
+    resized_raw_batch, _ = adapt_cnn_input_tensor(
+        np.expand_dims(raw_chip, axis=0),
+        data_format="channels_last",
+        resize_to=bundle.target_size,
+        target_channels=bundle.target_channels,
+        normalization="none",
+    )
+    model_batch, _ = adapt_cnn_input_tensor(
+        np.expand_dims(raw_chip, axis=0),
+        data_format="channels_last",
+        resize_to=bundle.target_size,
+        target_channels=bundle.target_channels,
+        normalization=bundle.normalization,
+        normalizer=bundle.normalizer,
+    )
+
+    resized_chip = np.asarray(resized_raw_batch[0], dtype=np.float32)
+    model_input = np.asarray(model_batch[0], dtype=np.float32)
+    prob_pos = _predict_positive_probability(bundle, model_batch)
+    pred_class = int(prob_pos >= float(bundle.decision_threshold))
+    pred_label = str(bundle.class_names[pred_class])
+    heatmap = compute_gradcam_heatmap(
+        bundle.model,
+        model_input,
+        class_index=int(class_index),
+    )
+    false_color = build_false_color_preview(resized_chip, band_order=DEFAULT_BAND_ORDER)
+    rgb_preview = build_rgb_preview(resized_chip, band_order=DEFAULT_BAND_ORDER)
+    overlay = overlay_activation_heatmap(false_color, heatmap, alpha=0.45, colormap="jet")
+
+    return {
+        "sample_id": str(sample_id),
+        "path": str(sample_df["path"].iloc[0]),
+        "prob_pos": float(prob_pos),
+        "pred_class": pred_class,
+        "pred_label": pred_label,
+        "decision_threshold": float(bundle.decision_threshold),
+        "decision_threshold_name": str(bundle.decision_threshold_name),
+        "class_index": int(class_index),
+        "class_name": str(bundle.class_names[int(class_index)]),
+        "raw_shape": tuple(int(v) for v in raw_chip.shape),
+        "input_shape": tuple(int(v) for v in model_input.shape),
+        "false_color_preview": false_color,
+        "rgb_preview": rgb_preview,
+        "heatmap": heatmap,
+        "overlay": overlay,
+    }
 
 
 def assess_chip_quality(

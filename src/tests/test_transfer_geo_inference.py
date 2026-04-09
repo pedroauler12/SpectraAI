@@ -1,5 +1,6 @@
 from pathlib import Path
 import importlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -231,3 +232,79 @@ def test_load_a11_transfer_inference_bundle_uses_artifact_config(tmp_path: Path,
     assert bundle.decision_threshold == pytest.approx(0.42)
     assert bundle.decision_threshold_name == "threshold_default"
     assert bundle.model_path == outputs_models / "best_model.keras"
+
+
+def test_generate_dataset_sample_gradcam_returns_visual_artifacts(tmp_path: Path, monkeypatch):
+    np = pytest.importorskip("numpy")
+    pd = pytest.importorskip("pandas")
+
+    from src.inference import transfer_geo_inference as geo
+
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    (project_root / "src").mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    pd.DataFrame(
+        [
+            {
+                "path": "/tmp/ASTER_IMG/S1/chip_128x128_multiband.tif",
+                "count": 1,
+                "height": 2,
+                "width": 2,
+                "pixel_0": 0.1,
+                "pixel_1": 0.2,
+                "pixel_2": 0.3,
+                "pixel_3": 0.4,
+            }
+        ]
+    ).to_csv(data_dir / "pixels_dataset.csv", index=False)
+
+    class DummyModel:
+        def predict(self, batch, verbose=0):
+            return np.array([[0.81]], dtype=np.float32)
+
+    bundle = SimpleNamespace(
+        dataset_csv=data_dir / "pixels_dataset.csv",
+        target_size=(2, 2),
+        target_channels=1,
+        normalization="none",
+        normalizer=None,
+        model=DummyModel(),
+        decision_threshold=0.5,
+        decision_threshold_name="threshold_default",
+        class_names=("Negativo", "Positivo"),
+    )
+
+    monkeypatch.setattr(
+        geo,
+        "_load_transfer_bundle_for_threshold",
+        lambda project_root, threshold_mode, model_key: bundle,
+    )
+    monkeypatch.setattr(
+        geo,
+        "compute_gradcam_heatmap",
+        lambda model, image, class_index=1: np.array([[0.2, 0.8], [0.1, 0.6]], dtype=np.float32),
+    )
+    monkeypatch.setattr(
+        geo,
+        "build_false_color_preview",
+        lambda chip, band_order=geo.DEFAULT_BAND_ORDER, rgb_bands=("B06", "B05", "B02"): np.repeat(chip[..., :1], 3, axis=-1),
+    )
+    monkeypatch.setattr(
+        geo,
+        "build_rgb_preview",
+        lambda chip, band_order=geo.DEFAULT_BAND_ORDER, rgb_bands=("B03N", "B02", "B01"): np.repeat(chip[..., :1], 3, axis=-1),
+    )
+
+    result = geo.generate_dataset_sample_gradcam(
+        "S1",
+        project_root=project_root,
+        model_key="a11_pipeline_e2e",
+    )
+
+    assert result["sample_id"] == "S1"
+    assert result["pred_label"] == "Positivo"
+    assert result["prob_pos"] == pytest.approx(0.81)
+    assert result["heatmap"].shape == (2, 2)
+    assert result["overlay"].shape == (2, 2, 3)
