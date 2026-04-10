@@ -205,6 +205,9 @@ def save_preview_png(preview_rgb: np.ndarray, output_path: str | Path) -> Path:
     """
     Salva preview RGB em PNG para visualizacao no notebook/app.
     """
+    import matplotlib
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     out_path = Path(output_path)
@@ -348,7 +351,6 @@ def _resolve_threshold_config(
             return float(config["evaluation"]["threshold_default"]), "threshold_default"
         except Exception:
             return 0.5, "threshold_0.5"
-
     return _resolve_threshold_from_metrics(
         project_root,
         threshold_name=threshold_mode,
@@ -382,8 +384,6 @@ def _load_dataset_rows_for_sample(dataset_csv: str | Path, sample_id: str) -> pd
     if filtered_df.empty:
         raise ValueError(f"Nenhuma linha encontrada no dataset para a amostra {sample_id}.")
     return filtered_df
-
-
 def _load_points_metadata(project_root: Path) -> pd.DataFrame:
     excel_path = project_root / "data" / "banco.xlsx"
     metadata = pd.read_excel(excel_path, sheet_name="Banco de Dados Positivo-Negativ").copy()
@@ -470,7 +470,6 @@ def _load_transfer_bundle_for_threshold(
         return load_a11_transfer_inference_bundle(
             project_root=project_root,
         )
-
     if threshold_mode == "threshold_0.5":
         return load_transfer_inference_bundle(
             project_root=project_root,
@@ -718,8 +717,6 @@ def generate_dataset_sample_gradcam(
         "heatmap": heatmap,
         "overlay": overlay,
     }
-
-
 def assess_chip_quality(
     chip_array: np.ndarray,
     *,

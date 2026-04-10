@@ -21,7 +21,7 @@ def test_predict_chip_array_basic(tmp_path: Path):
     bundle = TransferInferenceBundle(
         project_root=tmp_path,
         model=DummyModel(),
-        model_name="Dummy",
+        model_name="Transfer Learning (A08)",
         normalizer={
             "method": "zscore",
             "data_format": "channels_last",
@@ -74,7 +74,7 @@ def test_predict_point_from_earthdata_with_mocks(tmp_path: Path, monkeypatch):
     bundle = TransferInferenceBundle(
         project_root=tmp_path,
         model=DummyModel(),
-        model_name="Dummy",
+        model_name="Transfer Learning (A08)",
         normalizer={
             "method": "zscore",
             "data_format": "channels_last",
