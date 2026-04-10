@@ -288,6 +288,39 @@ A reproducao do conteudo do notebook tambem pode ser feita pela CLI com
 `--execute-notebook`, que salva uma copia executada do arquivo em
 `outputs/notebooks/a11_pipeline_e2e.executed.ipynb`.
 
+## Demo interativa conectada ao A11
+
+O modelo final salvo em:
+
+- `artefatos/a11_pipeline_e2e/outputs/models/best_model.keras`
+
+tambem e usado pela aplicacao Streamlit do projeto. Isso permite transformar a
+saida do pipeline em uma experiencia mais visual para leitura de alvos,
+explicabilidade e planejamento de campanha.
+
+### Como abrir
+
+Da raiz do repositório:
+
+```bash
+streamlit run src/apps/a09_geo_demo.py
+```
+
+### Páginas principais da demo
+
+- `Mapa de Analise`: leitura de uma área escolhida no mapa.
+- `Alvos Prioritarios`: ranking completo das amostras.
+- `Painel de Decisao`: separação de alvos para campanha.
+- `Entender Uma Amostra`: explicação por amostra com linguagem amigável.
+- `Regioes Promissoras`: clusters, mapa de calor e comparação entre amostras.
+- `Planejar Campanha`: campanha sugerida com edição manual.
+
+### Tutorial em vídeo
+
+Vídeo com preparação do ambiente, execução do código e visão geral do repositório:
+
+- https://drive.google.com/file/d/1fz1Mr6LvjvfNqrbxKkp4UlPtv_lIauFt/view?usp=sharing
+
 ## Troubleshooting
 
 - `ModuleNotFoundError: artefatos`: execute via `python3 -m artefatos.a11_pipeline_e2e`.
