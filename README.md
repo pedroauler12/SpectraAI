@@ -263,6 +263,84 @@ Balanced Accuracy:  0.8792
 
 ---
 
+## 🎥 Tutorial em Vídeo
+
+Foi gravado um vídeo único com a visão geral do repositório, preparação do
+ambiente e execução dos principais fluxos do projeto:
+
+- Tutorial completo: https://drive.google.com/file/d/1fz1Mr6LvjvfNqrbxKkp4UlPtv_lIauFt/view?usp=sharing
+
+> Este vídeo pode ser usado como material principal de onboarding do projeto. Ele cobre a estrutura do repositório, a instalação do ambiente e a execução dos códigos mais importantes.
+
+---
+
+## 🖥️ Aplicação Interativa
+
+Além do pipeline oficial do A11, o projeto inclui uma aplicação em Streamlit
+para exploração visual, leitura dos alvos e apoio à decisão.
+
+### Como abrir o app
+
+Da raiz do repositório:
+
+```bash
+streamlit run src/apps/a09_geo_demo.py
+```
+
+Se houver problema com backend gráfico:
+
+```bash
+MPLBACKEND=Agg streamlit run src/apps/a09_geo_demo.py
+```
+
+### O que existe no app
+
+- `Mapa de Analise`: permite escolher um ponto no mapa e analisar a área com o modelo final.
+- `Alvos Prioritarios`: lista todas as amostras ordenadas pelas áreas com maior chance estimada.
+- `Painel de Decisao`: ajuda a separar alvos para campanha com filtros e shortlist.
+- `Entender Uma Amostra`: mostra explicação por amostra, com linguagem simples e Grad-CAM individual.
+- `Regioes Promissoras`: mostra mapa de calor, agrupamentos geográficos e comparação entre amostras.
+- `Planejar Campanha`: gera uma campanha sugerida e permite editar prioridades, status e notas.
+
+### Fluxo recomendado para demonstração
+
+1. Abra `Mapa de Analise` para mostrar a leitura de uma área escolhida no mapa.
+2. Vá para `Alvos Prioritarios` para ver o ranking completo da base.
+3. Use `Painel de Decisao` para separar alvos de interesse.
+4. Mostre `Entender Uma Amostra` para explicar por que um alvo chamou atenção.
+5. Mostre `Regioes Promissoras` para destacar clusters e mapa de calor.
+6. Finalize em `Planejar Campanha` com a sugestão editável de visita a campo.
+
+### Campos para inserir imagens das telas
+
+Use os blocos abaixo para inserir screenshots finais no README:
+
+### Tela Inicial e Pipeline por Coordenada
+
+<img src="./assets/telainicial.png">
+
+### Ranking Probabilístico das Amostras
+
+<img src="./assets/alvos.png">
+
+### Painel de Decisão das Amostras e Regiões
+
+<img src="./assets/painelDecisao.png">
+
+### Explicabilidade dos Resultados das Amostras
+
+<img src="./assets/estudoAmostra.png">
+
+### Definição de Regiões Promissoras
+
+<img src="./assets/regioesPromissoras.png">
+
+### Planejamento de Campanha
+
+<img src="./assets/planejarCampanha.png">
+
+---
+
 ## 📊 Artefatos por Sprint
 
 ### Sprint 1 — Entendimento do problema e baseline clássico
