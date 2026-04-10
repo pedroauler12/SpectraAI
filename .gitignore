@@ -1,3 +1,4 @@
+.netrc
 /dados_dropbox/
 /logs/
 /temp/
@@ -15,12 +16,12 @@ env/
 venv/
 .env
 *.csv
-!outputs/trained_models/experiments_log.csv
+!models/trained_models/experiments_log.csv
 .venv/
 .claude/
 .venv/
 __pycache__/
-outputs/trained_models/
+models/trained_models/
 *.keras
 data/
 *.h5

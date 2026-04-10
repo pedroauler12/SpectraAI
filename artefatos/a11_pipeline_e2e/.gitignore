@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Dados e modelos (não versionar arquivos grandes)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Outputs gerados (artefato reproduzível: manter apenas .gitkeep)
+outputs/**/*
+!outputs/
+!outputs/metrics/
+!outputs/models/
+!outputs/notebooks/
+!outputs/notebook_visualizations/
+!outputs/predictions/
+!outputs/visualizations/
+!outputs/metrics/.gitkeep
+!outputs/models/.gitkeep
+!outputs/notebooks/.gitkeep
+!outputs/notebook_visualizations/.gitkeep
+!outputs/predictions/.gitkeep
+!outputs/visualizations/.gitkeep
+
+# Sistema
+.DS_Store
+*.swp

@@ -37,6 +37,7 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 - Eduardo Rizk
 - Giovanna Vieira
 - Larissa Souza
+- Lucas Jorge
 - Mateus Pereira
 - Pedro Auler
 
@@ -88,16 +89,46 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
 ├── src/                   # código modular reutilizável (.py)
+│   ├── apps/              # aplicações interativas (Streamlit)
+│   ├── evaluation/        # módulo de avaliação de modelos
+│   └── tests/             # testes automatizados (pytest)
 ├── notebooks/             # exploração, experimentos e narrativa
 ├── data/                  # dados de entrada
 ├── models/                # modelos treinados/checkpoints
-├── outputs/               # métricas, gráficos e resultados gerados
+│   └── trained_models/    # experimentos de treino (configs e histórico)
+├── outputs/               # resultados gerados automaticamente
+│   ├── figures/           # gráficos e visualizações
+│   ├── metrics/           # métricas e JSONs de avaliação
+│   └── predictions/       # predições exportadas
 ├── slides/                # apresentações do projeto
 ├── assets/                # imagens, logos e recursos estáticos
-├── testes/                # testes automatizados
 ├── Makefile
-├── requirements-dev.txt
+├── run_pipeline.py        # utilitário de execução iterativa do pipeline
+├── requirements.txt       # dependências de produção
+├── requirements-dev.txt   # dependências de desenvolvimento (pytest, etc.)
 └── README.md
+```
+
+---
+
+## Entrega A11
+
+A entrega final reproduzivel do pipeline end-to-end esta em
+`artefatos/a11_pipeline_e2e/`.
+
+> **Nota:** `run_pipeline.py` na raiz e um utilitario de desenvolvimento
+> para experimentos iterativos. O entrypoint oficial da entrega A11 e
+> `artefatos/a11_pipeline_e2e/main.py`, executado via modulo conforme
+> documentado abaixo.
+
+- README oficial do artefato: `artefatos/a11_pipeline_e2e/README.md`
+- comando oficial:
+
+```bash
+python3 -m pip install -r artefatos/a11_pipeline_e2e/requirements.txt
+
+python3 -m artefatos.a11_pipeline_e2e \
+  --config artefatos/a11_pipeline_e2e/config.yaml
 ```
 
 ---
@@ -153,6 +184,9 @@ cd <repo>
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -U pip
+# produção
+python -m pip install -r requirements.txt
+# desenvolvimento (inclui pytest, pytest-cov)
 python -m pip install -r requirements-dev.txt
 ```
 
@@ -166,10 +200,145 @@ make test
 jupyter notebook
 ```
 
-### 5️⃣ Executar baseline clássico (A02)
+### 5️⃣ Executar pipeline iterativo de desenvolvimento
+```bash
+python run_pipeline.py
+```
+
+> Para a entrega oficial reprodutível (A11), use o comando abaixo (ver [Entrega A11](#entrega-a11)):
+> ```bash
+> python3 -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
+> ```
+
+### 6️⃣ Executar baseline clássico (A02)
 ```bash
 jupyter notebook artefatos/a02_baseline_classico/a02_baseline_classico.ipynb
 ```
+
+### 6️⃣ Executar pipeline final (A11) e consolidar métricas
+
+#### Opção A: Usar Makefile (recomendado)
+```bash
+# Executar o pipeline completo do A11
+make run-a11
+
+# Consolidar métricas em CSV padronizado
+make consolidate-a11-metrics
+
+# Resultado: outputs/a11_metrics_final.csv
+```
+
+#### Opção B: Executar manualmente
+```bash
+# Rodar o pipeline A11
+python -m artefatos.a11_pipeline_e2e --config artefatos/a11_pipeline_e2e/config.yaml
+
+# Consolidar métricas do A11 em formato padronizado
+python scripts/consolidate_a11_metrics.py
+
+# Resultado: 
+#   - outputs/a11_metrics_final.csv (formato tabulado)
+#   - outputs/a11_metrics_final.json (formato estruturado)
+```
+
+**Saída gerada pelo A11:**
+| Arquivo | Localização | Descrição |
+|---------|------------|-----------|
+| `summary.json` | `artefatos/a11_pipeline_e2e/outputs/metrics/` | Resumo completo: métricas, configuração, timestamps |
+| `summary.csv` | `artefatos/a11_pipeline_e2e/outputs/metrics/` | Idem em CSV |
+| `best_model.keras` | `artefatos/a11_pipeline_e2e/outputs/models/` | Pesos do modelo treinado (~19 MB) |
+| `history.json` | `artefatos/a11_pipeline_e2e/outputs/models/` | Histórico de loss/accuracy por época |
+| `test_predictions.csv` | `artefatos/a11_pipeline_e2e/outputs/predictions/` | Predições no conjunto de teste |
+
+**Métricas consolidadas pelo script:**
+```
+Acurácia:           0.8814
+Precisão:           0.8333
+Recall:             0.8696
+F1-Score:           0.8511
+ROC-AUC:            0.9348
+PR-AUC:             0.8747
+Balanced Accuracy:  0.8792
+```
+
+---
+
+## 🎥 Tutorial em Vídeo
+
+Foi gravado um vídeo único com a visão geral do repositório, preparação do
+ambiente e execução dos principais fluxos do projeto:
+
+- Tutorial completo: https://drive.google.com/file/d/1fz1Mr6LvjvfNqrbxKkp4UlPtv_lIauFt/view?usp=sharing
+
+> Este vídeo pode ser usado como material principal de onboarding do projeto. Ele cobre a estrutura do repositório, a instalação do ambiente e a execução dos códigos mais importantes.
+
+---
+
+## 🖥️ Aplicação Interativa
+
+Além do pipeline oficial do A11, o projeto inclui uma aplicação em Streamlit
+para exploração visual, leitura dos alvos e apoio à decisão.
+
+### Como abrir o app
+
+Da raiz do repositório:
+
+```bash
+streamlit run src/apps/a09_geo_demo.py
+```
+
+Se houver problema com backend gráfico:
+
+```bash
+MPLBACKEND=Agg streamlit run src/apps/a09_geo_demo.py
+```
+
+### O que existe no app
+
+- `Mapa de Analise`: permite escolher um ponto no mapa e analisar a área com o modelo final.
+- `Alvos Prioritarios`: lista todas as amostras ordenadas pelas áreas com maior chance estimada.
+- `Painel de Decisao`: ajuda a separar alvos para campanha com filtros e shortlist.
+- `Entender Uma Amostra`: mostra explicação por amostra, com linguagem simples e Grad-CAM individual.
+- `Regioes Promissoras`: mostra mapa de calor, agrupamentos geográficos e comparação entre amostras.
+- `Planejar Campanha`: gera uma campanha sugerida e permite editar prioridades, status e notas.
+
+### Fluxo recomendado para demonstração
+
+1. Abra `Mapa de Analise` para mostrar a leitura de uma área escolhida no mapa.
+2. Vá para `Alvos Prioritarios` para ver o ranking completo da base.
+3. Use `Painel de Decisao` para separar alvos de interesse.
+4. Mostre `Entender Uma Amostra` para explicar por que um alvo chamou atenção.
+5. Mostre `Regioes Promissoras` para destacar clusters e mapa de calor.
+6. Finalize em `Planejar Campanha` com a sugestão editável de visita a campo.
+
+### Campos para inserir imagens das telas
+
+Use os blocos abaixo para inserir screenshots finais no README:
+
+### Tela Inicial e Pipeline por Coordenada
+
+<img src="./assets/telainicial.png">
+
+### Ranking Probabilístico das Amostras
+
+<img src="./assets/alvos.png">
+
+### Painel de Decisão das Amostras e Regiões
+
+<img src="./assets/painelDecisao.png">
+
+### Explicabilidade dos Resultados das Amostras
+
+<img src="./assets/estudoAmostra.png">
+
+### Definição de Regiões Promissoras
+
+<img src="./assets/regioesPromissoras.png">
+
+### Planejamento de Campanha
+
+<img src="./assets/planejarCampanha.png">
+
 ---
 
 ## 📊 Artefatos por Sprint

@@ -1,0 +1,1 @@
+"""Artefatos formais do projeto."""

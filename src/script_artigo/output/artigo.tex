@@ -1,0 +1,311 @@
+\documentclass[12pt,twocolumn]{article}
+
+\usepackage{enumerate}
+\usepackage{indentfirst}
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage{float}
+\usepackage[brazil]{babel}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{tabularx}
+
+% ============================
+% Forçar seções em NEGRITO via titlesec (já carregado pelo sbc-template)
+% ============================
+\titleformat{\section}
+  {\normalfont\fontsize{13}{17}\selectfont\bfseries\boldmath}{{\thesection}.}{0.5em}{}
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\boldmath}{{\thesubsection}.}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}{{\thesubsubsection}.}{0.5em}{}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt}
+\titlespacing*{\subsubsection}{0pt}{6pt}{2pt}
+
+\renewcommand{\email}[1]{\\\mbox{}\\[-6pt]\footnotesize\ttfamily\begin{tabular}{c}#1\end{tabular}}
+
+% ============================
+% Espaçamento entre colunas (uniforme em TODAS as páginas)
+% ============================
+\setlength{\columnsep}{0.8cm}
+
+% pandoc tight_list support
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% scale images to fit column
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\columnwidth\columnwidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+% Reduzir espaçamento vertical de figuras
+\setlength{\intextsep}{2pt plus 1pt minus 1pt}
+\setlength{\floatsep}{2pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{2pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{0pt}
+
+% pandoc bounded image support
+\newcommand{\pandocbounded}[1]{#1}
+
+% longtable replacement handled by sed in build script
+
+% Redefinir abstract e resumo para duas colunas (sem margens internas extras)
+\makeatletter
+\renewenvironment{abstract}{%
+      \list{}{\advance\topsep by6pt\relax
+      \leftmargin=0cm
+      \labelwidth=\z@
+      \listparindent=\z@
+      \itemindent\listparindent
+      \rightmargin\leftmargin}\item[\hskip\labelsep
+                                    \bfseries\itshape Abstract.]\itshape}%
+      {\endlist}
+
+\renewenvironment{resumo}{%
+      \list{}{\advance\topsep by6pt\relax
+      \leftmargin=0cm
+      \labelwidth=\z@
+      \listparindent=\z@
+      \itemindent\listparindent
+      \rightmargin\leftmargin}\item[\hskip\labelsep
+                                    \bfseries\itshape Resumo.]\itshape}%
+      {\endlist}
+\makeatother
+
+% Forçar título em coluna única usando \@twocolumnfalse temporário
+\makeatletter
+\renewcommand{\maketitle}{%
+  \twocolumn[%
+    \begin{center}
+    \vspace*{-0.7cm}
+    {\fontsize{16}{20}\selectfont\bfseries\@title\par}
+    \vskip 6pt plus 3pt minus 3pt
+    {\normalsize\textbf{\begin{tabular}[t]{c}\@author\end{tabular}}\par}
+    \vskip 6pt plus 3pt minus 3pt
+    {\normalsize\begin{tabular}[t]{c}\inst{\instnum}\@address\end{tabular}\par}
+    \end{center}
+    \vskip 0.3cm
+  ]%
+}
+\makeatother
+
+% Referências com espaçamento reduzido (fonte padrão mantida)
+\let\oldbibliography\thebibliography
+\renewcommand{\thebibliography}[1]{\oldbibliography{#1}}
+
+\sloppy
+\tolerance=1000
+\emergencystretch=3em
+\hbadness=10000
+\hfuzz=2pt
+
+\title{SpectraAI: Prospecção de Terras Raras a partir de Imagens Multiespectrais ASTER com Aprendizado de Máquina e Visão Computacional}
+
+\author{
+Drielly Santana Farias\inst{1},
+Eduardo Farias Rizk\inst{1},
+Giovanna Fátima de Britto Vieira\inst{1},\\
+Larissa Martins Pereira de Souza\inst{1},
+Lucas Ramenzoni Jorge\inst{1},
+Mateus Beppler Pereira\inst{1},\\
+Pedro Auler de Barros Martins\inst{1}
+}
+
+\address{Instituto de Tecnologia e Liderança (Inteli)\\
+  Av. Prof. Almeida Prado, 520 -- Butantã -- 05508-901 -- São Paulo -- SP
+  \email{\{drielly.farias,eduardo.rizk,larissa.souza,giovanna.vieira, \\lucas.jorge,mateus.pereira,pedro.martins\}@sou.inteli.edu.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This work presents SpectraAI, a reproducible geospatial pipeline that transforms ASTER multispectral imagery into probabilistic indicators of rare earth element (REE) prospectivity. The methodology includes atmospheric filtering, spectral feature engineering, and construction of labeled 128x128x9 image chips. A comparative evaluation using MLP, CNN, and transfer learning with MobileNetV2 shows consistent improvement, with the final model achieving 88.14\% accuracy, 0.8511 F1-score, and 0.9167 ROC-AUC. Grad-CAM analysis indicates alignment with geologically relevant patterns.
+
+\noindent \textbf{Keywords:} remote sensing, ASTER, rare earth elements, deep learning, mineral prospecting.
+\end{abstract}
+
+\begin{resumo}
+Este trabalho apresenta o SpectraAI, um pipeline reprodutível que transforma imagens multiespectrais ASTER em indicadores probabilísticos de potencial prospectivo de elementos de terras raras (REE). A metodologia inclui filtragem atmosférica, engenharia de atributos espectrais e construção de chips 128x128x9 rotulados. A avaliação comparativa entre MLP, CNN e transfer learning com MobileNetV2 demonstra melhoria consistente, com o modelo final alcançando 88,14\% de acurácia, F1-score de 0,8511 e ROC-AUC de 0,9167.
+
+\noindent \textbf{Palavras-chave:} sensoriamento remoto, ASTER, elementos de terras raras, aprendizado profundo, prospecção mineral.
+\end{resumo}
+
+\section{Introdução}\label{introduuxe7uxe3o}
+
+Os Elementos de Terras Raras (Rare Earth Elements --- REE) compõem um grupo de 17 elementos amplamente empregados em tecnologias de alto valor agregado, incluindo eletrônica, aplicações industriais avançadas e sistemas energéticos de baixo carbono. A demanda crescente por esses elementos, impulsionada pela transição energética global, tem intensificado preocupações quanto à segurança de suprimento, dado que a produção e o refino permanecem geograficamente concentrados \cite{iea2021, usgs2025}. Nesse cenário, o Brasil ocupa posição estratégica em virtude de suas reservas expressivas de REE, o que reforça a relevância de métodos eficientes e escaláveis de prospecção mineral. Do ponto de vista operacional, a prospecção mineral tradicional depende de campanhas de campo, amostragem e análises laboratoriais, etapas onerosas e de difícil escalabilidade espacial. Em contrapartida, o sensoriamento remoto oferece um meio de observação sistemática e repetível para apoiar a triagem de alvos, especialmente quando combinado a métodos quantitativos de análise de dados \cite{sabins1999, vandermeer2012}.
+
+Nesse contexto, o Advanced Spaceborne Thermal Emission and Reflection Radiometer (ASTER) consolidou-se como um dos sensores mais utilizados em mapeamento litológico e exploração mineral, ao disponibilizar bandas espectrais relevantes no VNIR e no SWIR \cite{abrams2019, ramsey2020}. Contudo, a interpretação manual dessas cenas permanece limitada pela alta dimensionalidade espectral e pela sutileza de padrões associados a mineralizações \cite{shirmard2022}. Historicamente, as aplicações de aprendizado de máquina nesse domínio têm sido conduzidas a partir de representações tabulares, descartando a estrutura espacial das imagens. Para superar essa limitação, redes neurais convolucionais (CNN) permitem aprender padrões espaciais e espectrais diretamente a partir de janelas de imagem, preservando relações de vizinhança entre pixels \cite{zhu2017}.
+
+Este trabalho apresenta o SpectraAI, um pipeline de ciência de dados geoespaciais que utiliza imagens ASTER e dados de referência fornecidos pela Frontera Minerals para estimar, de forma probabilística, o potencial prospectivo de REE e produzir um ranking de áreas prioritárias para campanhas de pesquisa geológica de campo. As principais contribuições incluem: a construção de um pipeline reprodutível end-to-end; a comparação sistemática entre modelos tabulares (MLP), CNN e transfer learning com MobileNetV2 \cite{sandler2018}; e a análise de interpretabilidade via Grad-CAM.
+
+Especificamente, o trabalho visa:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Construir protocolo de engenharia de atributos espectrais} para realce de minerais de alteração hidrotermal a partir de bandas ASTER;
+\item
+  \textbf{Comparar arquiteturas de visão computacional} (CNN) com baselines clássicos (SVM, RF, Regressão Logística) e tabular (MLP);
+\item
+  \textbf{Implementar validação estratificada} com métricas robustas ao desbalanceamento (F1-score, acurácia balanceada, ROC-AUC);
+\item
+  \textbf{Produzir ranking probabilístico} de áreas prospectivas como ferramenta de apoio à decisão em exploração geológica.
+\end{itemize}
+
+\section{Fundamentação Teórica}\label{fundamentauxe7uxe3o-teuxf3rica}
+
+A análise por sensoriamento remoto em geociências fundamenta-se na interação entre radiação eletromagnética e materiais geológicos, em que minerais e rochas exibem respostas espectrais condicionadas por composição e estrutura físico-química. Técnicas clássicas incluem razões de bandas e Análise de Componentes Principais (PCA), frequentemente empregadas para realçar assinaturas diagnósticas de minerais de alteração e discriminar unidades litológicas \cite{abrams2019, rowan2003}. O sensor ASTER, projetado com subsistemas em VNIR (3 canais, 15 m) e SWIR (6 canais, 30 m), favorece a investigação de características mineralógicas relevantes, tendo contribuído significativamente para mapeamento litológico e exploração mineral ao longo de décadas \cite{abrams2019, ramsey2020}.
+
+Nos últimos anos, a integração de aprendizado de máquina ampliou o escopo do sensoriamento remoto aplicado à exploração mineral, ao permitir modelar relações não lineares e reduzir a dependência de regras fixas. Pipelines supervisionados capazes de transformar atributos espectrais em classificações quantitativas têm sido propostos, comparando algoritmos clássicos e redes neurais \cite{bahrami2024}. Revisões sobre \emph{mineral prospectivity mapping} com \emph{deep learning} destacam desafios como escassez de rótulos, desbalanceamento de classes e generalização espacial (SUN et al., 2024; SHIRMARD et al., 2022).
+
+\section{Materiais e Métodos}\label{materiais-e-muxe9todos}
+
+\subsection{Materiais}\label{materiais}
+
+Os materiais utilizados reúnem dados orbitais, dados de referência geográfica e metadados de rotulagem fornecidos pela Frontera Minerals. A base orbital é composta por cenas ASTER do produto L2 Surface Reflectance VNIR and Crosstalk-Corrected SWIR (AST\_07XT) \cite{nasa_aster}, com janela temporal entre 2000 e 2007 para preservar a disponibilidade operacional das bandas SWIR. Foram priorizadas as bandas VNIR (B01, B02, B03N) e SWIR (B04-B09), totalizando nove bandas por chip. As cenas candidatas são recuperadas por caixa geográfica ao redor dos pontos-alvo, com seleção por menor cobertura de nuvens. O material de referência para supervisão é composto por coordenadas georreferenciadas de interesse geológico e listas de códigos positivos e negativos. Após a remoção de amostras com rótulos inválidos, o dataset final contém 295 chips multiespectrais, dos quais 179 pertencem à classe negativa (60,7\%) e 116 à classe positiva (39,3\%).
+
+\subsection{Métodos}\label{muxe9todos}
+
+\subsubsection{Aquisição e Pré-processamento}\label{aquisiuxe7uxe3o-e-pruxe9-processamento}
+
+A base de dados é composta por amostras de solo e rocha coletadas \emph{in situ} pela Frontera Minerals, rotuladas binariamente: classe positiva (áreas com teores acima do \emph{cut-off} econômico) e classe negativa (áreas estéreis ou com teores de base). As assinaturas espectrais foram extraídas de imagens ASTER, priorizando cenas históricas (2000-2007) com cobertura de nuvens inferior a 20\% \cite{nasa_aster}. O pré-processamento incluiu filtragem de máscaras (remoção de pixels contaminados por nuvens e vegetação densa), reprojeção para WGS84, cálculo de índices minerais baseados em razões de bandas (como o Índice de Argilas, B06/(B05+B04)) e vetorização para a fase inicial de baselines. O dataset é construído a partir de chips gerados ao redor de pontos georreferenciados, sendo cada chip um GeoTIFF multibanda (128×128×9) com bandas VNIR+SWIR alinhadas. A extração utiliza \emph{bounding box} com jitter controlado por semente, garantindo variação posicional do ponto de referência dentro do chip.
+
+\subsubsection{Modelagem}\label{modelagem}
+
+O desempenho de referência foi estabelecido por algoritmos clássicos (SVM, Random Forest, Regressão Logística) otimizados via \emph{GridSearchCV} e por uma rede neural densa (MLP) como baseline de deep learning sobre dados vetorizados. Visando superar a limitação da MLP, que ignora a vizinhança espacial, o projeto evoluiu para redes neurais convolucionais (CNN), que recebem o chip em sua forma original (altura $\times$ largura $\times$ canais), permitindo que filtros convolucionais identifiquem texturas e padrões morfológicos. A arquitetura baseline é composta por dois blocos convolucionais (Conv2D com ReLU, regularização L2 e MaxPooling2D) seguidos por camadas densas de classificação com ativação sigmoid. Para investigar o impacto de escolhas arquiteturais, foram definidas seis configurações em estudo de ablação, variando taxas de dropout, learning rate, profundidade da rede e resolução de entrada.
+
+\subsubsection{Protocolo Experimental}\label{protocolo-experimental}
+
+O dataset foi dividido em treinamento (70\%), validação (15\%) e teste (15\%), utilizando amostragem estratificada em duas etapas com a função \emph{train\_test\_split} do scikit-learn. Essa divisão assegura que a proporção entre classes seja preservada em todos os subconjuntos. A normalização é realizada por padronização z-score por canal espectral, cujos parâmetros são estimados exclusivamente a partir do conjunto de treinamento e aplicados aos conjuntos de validação e teste, evitando vazamento de informação estatística. O conjunto de validação monitora o desempenho ao longo das épocas e identifica sinais de sobreajuste, enquanto o conjunto de teste permanece isolado até a avaliação final. O desempenho é avaliado por F1-score, acurácia balanceada e ROC-AUC, métricas adequadas para cenários com desbalanceamento de classes. Data augmentation (RandomFlip, RandomRotation e RandomContrast) é aplicada exclusivamente ao conjunto de treinamento.
+
+\subsubsection{Transfer Learning}\label{transfer-learning}
+
+Reconhecendo o tamanho limitado do dataset (N=295), o pipeline incorporou transfer learning com o backbone MobileNetV2 \cite{sandler2018}, pré-treinado no ImageNet. Para compatibilizar as 9 bandas ASTER com os 3 canais esperados pelo modelo, uma camada de convolução 1×1 realiza combinação linear das bandas para projeção em espaço latente de 3 canais, preservando a riqueza espectral com apenas \textasciitilde30 parâmetros adicionais. O treinamento ocorre em duas fases: na primeira (head training, 4 épocas), o backbone permanece congelado e apenas a camada adaptadora e a cabeça de classificação são treinadas; na segunda (fine-tuning parcial, 8 épocas), as últimas 20 camadas do MobileNetV2 são desbloqueadas (exceto BatchNormalization). Grid search sobre learning rates \{1e-4, 1e-5\} e batch sizes \{8, 32\} identificou a configuração ótima (LR=1e-4, BS=8).
+
+\section{Trabalhos Relacionados}\label{trabalhos-relacionados}
+
+Abrams e Yamaguchi \cite{abrams2019} documentam duas décadas de contribuições do sensor ASTER para mapeamento litológico e exploração mineral, consolidando práticas de razões de bandas e PCA como ferramentas de extração de informação mineralógica. O estudo destaca a configuração espectral do sensor, com seis bandas SWIR e cinco bandas TIR, como determinante para distinguir minerais de alteração hidrotermal (argilas, carbonatos, sulfatos), além de relatar o uso crescente de redes neurais para classificação litológica. Nesse contexto, Rowan e Mars \cite{rowan2003} foram os primeiros a demonstrar a capacidade das 14 bandas ASTER em distinguir litologias e mapear zonas de contato metamórfico associadas a depósitos de REE em Mountain Pass (Califórnia), validando empiricamente a viabilidade dos dados multiespectrais para caracterização mineral em condições de boa exposição superficial.
+
+Bem como, Bahrami et al. \cite{bahrami2024} investigam mapeamento litológico automatizado com ASTER na região de Sar-Cheshmeh (Irã), comparando RF, SVM, XGBoost e ANN e evidenciando que escolhas de pré-processamento e seleção de atributos espectrais afetam significativamente a qualidade dos resultados, oferecendo um baseline metodológico sólido para comparação entre modelos clássicos e redes neurais. Entretanto, o estudo é orientado a classes litológicas regionais, não sendo desenhado para ranking prospectivo binário nem para generalização a rótulos derivados de coordenadas georreferenciadas. Luo et al. \cite{luo2025} propuseram o framework DEEP-SEAM v1.0 com Deviation Networks para prospecção semi-supervisionada em dados multifonte, alcançando bom desempenho em cenários com rótulos escassos, mas sem utilizar sensoriamento remoto multiespectral nativo como fonte primária de evidências. Song et al. \cite{song2024} aplicaram redes multitarefa a dados geoquímicos tabulares para predição de concentração de REE em cinzas de carvão, demonstrando capacidade de filtrar ruído e capturar correlações não lineares, porém sem explorar informação de imagem ou estrutura espacial. Chen et al. \cite{chen2014} foram pioneiros em aplicar deep learning com patches espaciais a dados hiperespectrais de sensoriamento remoto, demonstrando ganhos expressivos sobre SVM em abordagem análoga à estratégia de chips do SpectraAI, mas voltada a classificação de uso do solo e não a prospecção mineral com desbalanceamento de classes e rótulos de referência geológica. Shirmard et al.\ \cite{shirmard2022} reforçam que poucos estudos comparam representações tabulares e espaciais sistematicamente sobre o mesmo dataset, lacuna diretamente endereçada pelo pipeline proposto.
+
+\section{Resultados e Discussão}\label{resultados-e-discussuxe3o}
+
+% -----------------------------------------------------------------------
+% AJUSTE 1: Comparação de desempenho reescrita com visão consolidada
+% e análise crítica da progressão, não apenas descrição dos números.
+% -----------------------------------------------------------------------
+\subsection{Comparação de Desempenho}\label{comparauxe7uxe3o-de-desempenho}
+
+A Tabela~\ref{tab:comparacao-modelos} consolida o desempenho das arquiteturas avaliadas (N=295, divisão 70/15/15 estratificada). A progressão é analiticamente reveladora: cada salto corresponde a uma hipótese testada. O MLP (79,66\%, F1=0,7391) estabelece o teto da representação tabular --- sua limitação não é paramétrica, mas de insumo: ao operar sobre PCA de 2 componentes, descarta a vizinhança espacial, que é o sinal discriminativo central do problema. A CNN (82,44\%, ROC-AUC=0,9011) confirma essa hipótese; o estudo de ablação reforça: a remoção das camadas convolucionais colapsa o ROC-AUC de 0,9011 para 0,7083. O transfer learning com MobileNetV2 (84,75\%, ROC-AUC=0,9312) demonstra que representações pré-aprendidas no ImageNet capturam estruturas de baixo nível transferíveis para padrões mineralógicos --- a convergência em 12 épocas e a redução de 72\% em parâmetros treináveis indicam que o ganho vem de melhor inicialização, não de maior capacidade.
+
+\vspace{-4pt}
+\begin{table}[H]
+\centering
+\caption{Comparação consolidada entre arquiteturas no conjunto de teste. Fonte: Autores (2026)}
+\label{tab:comparacao-modelos}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Acurácia} & \textbf{F1-score} & \textbf{ROC-AUC} \\
+\hline
+MLP (tabular + PCA) & 79,66\% & 0,7391 & 0,8600 \\
+CNN baseline (64×64) & 82,44\% & 0,7800 & 0,9011 \\
+MobileNetV2 (A08)   & 84,75\% & 0,8085 & 0,9312 \\
+\textbf{MobileNetV2 (A11)} & \textbf{88,14\%} & \textbf{0,8511} & \textbf{0,9167} \\
+\hline
+\end{tabular}%
+}
+\end{table}
+\vspace{-4pt}
+
+% -----------------------------------------------------------------------
+% AJUSTE 2: Modelo final com análise mais crítica dos erros e
+% conexão explícita com a discussão subsequente.
+% -----------------------------------------------------------------------
+\subsection{Modelo Final (Pipeline A11)}\label{modelo-final-pipeline-a11}
+
+O pipeline final (A11) foi executado de forma integrada e reprodutível (seed=42), com treinamento em duas fases do MobileNetV2 adaptado espectralmente, sobre o dataset completo de 295 chips multiespectrais ASTER (177 treino, 59 validação, 59 teste). O modelo final alcançou acurácia de 88,14\%, F1-score de 0,8511 e ROC-AUC de 0,9167 (Tabela~\ref{tab:tabela-1--mtricas-do-modelo-fi}), convergindo em 13 épocas (6 head + 7 fine-tuning) e 94,4 s de treinamento.
+
+\begin{table}[H]
+\vspace{-6pt}
+\centering
+\caption{Métricas do modelo final (A11) no conjunto de teste. Fonte: Autores (2026)}
+\label{tab:tabela-1--mtricas-do-modelo-fi}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Métrica} & \textbf{Valor} \\
+\hline
+Acurácia & 88,14\% \\
+Precisão & 83,33\% \\
+Recall (Sensibilidade) & 86,96\% \\
+F1-score & 0,8511 \\
+Acurácia Balanceada & 87,92\% \\
+ROC-AUC & 0,9167 \\
+PR-AUC & 0,8588 \\
+Épocas totais & 13 (6 head + 7 fine-tuning) \\
+Tempo de treinamento & 94,4 s \\
+\hline
+\end{tabular}%
+}
+\vspace{-6pt}
+\end{table}
+
+A matriz de confusão (Figura 1) revela que o modelo classificou corretamente 52 das 59 amostras (TN=32, FP=4, FN=3, TP=20). A análise dos erros residuais é tão informativa quanto os acertos: os 3 falsos negativos representam áreas com potencial de REE não detectadas --- o erro de maior custo operacional, pois implica oportunidades de prospecção descartadas. Os 4 falsos positivos, por sua vez, correspondem a mobilização de campo em áreas estéreis, cujo custo é recuperável. Essa assimetria justifica o uso conjunto de ROC-AUC e PR-AUC como métricas de avaliação, e sugere que, em contexto operacional, um limiar de decisão levemente abaixo de 0,5 poderia reduzir falsos negativos ao custo de poucos falsos positivos adicionais. As curvas ROC (AUC=0,92) e Precision-Recall (AP=0,86), na Figura 2, corroboram essa flexibilidade: o modelo mantém alta precisão mesmo em regimes de alto recall, o que é essencial para sua aplicação como ferramenta de triagem prospectiva.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{imagens/f10.png}\caption{Matriz de Confusão do Modelo Final (A11) --- Conjunto de Teste. Fonte: Autores (2026)}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{imagens/f11.png}\caption{Curvas ROC e Precision-Recall do Modelo Final (A11). Fonte: Autores (2026)}
+\end{figure}
+
+\subsection{Interpretabilidade via Grad-CAM}\label{interpretabilidade-via-grad-cam}
+
+A Figura 3 apresenta mapas de ativação Grad-CAM que visualizam quais regiões espaciais o modelo MobileNetV2 prioriza ao fazer predições. A visualização sobrepõe os mapas de calor a um chip ASTER em falsa cor de uma amostra da classe positiva, comparando as ativações para as predições de cada classe. O mapa da classe positiva revela ativações concentradas em transições espectrais coerentes e bordas espaciais pronunciadas, enquanto o mapa da classe negativa apresenta padrão mais disperso e difuso. Essa concentração não é trivial: ela indica que o modelo aprendeu a distinguir estruturas de alteração hidrotermal --- e não artefatos de iluminação ou bordas de cena --- como sinal discriminativo, o que é consistente com o conhecimento geológico de que bandas SWIR são sensíveis a óxidos e argilas associados a REE. A convergência entre o comportamento do modelo e o conhecimento de domínio reforça a confiança nas predições e viabiliza sua auditoria por especialistas, condição necessária para adoção operacional do pipeline.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{imagens/f8a.png}\caption{Mapas Grad-CAM do Modelo Final --- Comparação entre Classes. Fonte: Autores (2026)}
+\end{figure}
+
+% -----------------------------------------------------------------------
+% AJUSTE 3: Discussão reescrita para ser analítica e conectar
+% explicitamente os resultados às implicações e à conclusão.
+% -----------------------------------------------------------------------
+\subsection{Discussão}\label{discussuxe3o}
+
+Os resultados apontam para três conclusões interligadas. Primeiro, a progressão MLP → CNN → MobileNetV2 reflete a hierarquia de informação do problema: REE em imagens ASTER requerem a combinação de padrões espaciais (zonas de alteração, contatos litológicos) com padrões espectrais (razões SWIR), o que explica a superioridade consistente dos modelos que preservam estrutura espacial. Segundo, o transfer learning demonstra que a escassez de rótulos --- principal limitação do domínio --- pode ser mitigada por inicialização informada: o ganho de 3,39 p.p. sobre a CNN com 72\% menos parâmetros ajustados indica que o gargalo estava no ponto de partida do treinamento, não na capacidade do modelo. Terceiro, o Grad-CAM conecta desempenho quantitativo e interpretação geológica: o modelo aprende representações alinhadas ao conhecimento de domínio, condição necessária para que o ranking probabilístico seja confiável em contexto operacional.
+
+\section{Conclusão}\label{conclusuxe3o}
+
+% -----------------------------------------------------------------------
+% AJUSTE 4: Conclusão reescrita para amarrar resultados, discussão
+% e contribuições em narrativa unificada, sem repetição descritiva.
+% -----------------------------------------------------------------------
+
+O SpectraAI demonstrou que a combinação de representação espacial via CNN, transfer learning com adaptação espectral e interpretabilidade via Grad-CAM constitui uma abordagem metodologicamente sólida para prospecção de REE a partir de imagens ASTER. A progressão de desempenho --- do MLP (79,66\%) à CNN (82,44\%) ao pipeline final A11 (88,14\%, F1=0,8511, ROC-AUC=0,9167) --- não é apenas uma sequência de melhorias numéricas: cada etapa testou e confirmou uma hipótese sobre a natureza do problema, culminando em um modelo cujos erros residuais (4 FP e 3 FN em 59 amostras) são analiticamente interpretáveis e operacionalmente manejáveis. O produto final --- um ranking probabilístico contínuo de áreas por potencial prospectivo --- representa uma ferramenta concreta de redução de custos de campo, ao concentrar esforços nas regiões com maior evidência espectral de ocorrência de REE.
+
+\subsection{Principais Contribuições}\label{principais-contribuiuxe7uxf5es}
+
+As contribuições do trabalho são: \textbf{(i)} a construção de um pipeline reprodutível end-to-end, desde a aquisição de cenas ASTER até a exportação de predições, com controle de seed e separação rigorosa entre conjuntos de dados; \textbf{(ii)} a comparação sistemática e controlada entre MLP, CNN e transfer learning sob métricas robustas ao desbalanceamento; \textbf{(iii)} a demonstração de que transfer learning com adaptação espectral via convolução 1×1 é viável e eficaz com poucos dados rotulados (N=295); e \textbf{(iv)} a análise de interpretabilidade via Grad-CAM, que revelou alinhamento entre regiões ativadas e características espectrais geologicamente relevantes, conferindo transparência às predições. Do ponto de vista prático, o ranking probabilístico de áreas produzido pelo pipeline representa uma ferramenta concreta de apoio à decisão em exploração mineral, capaz de reduzir custos operacionais ao direcionar esforços de campo para regiões com maior probabilidade de ocorrência de REE.
+
+\subsection{Limitações e Trabalhos Futuros}\label{limitauxe7uxf5es-e-trabalhos-futuros}
+
+Limitações relevantes incluem: o dataset de 295 amostras situa-se no limiar inferior de viabilidade para deep learning; os rótulos derivam de referência geológica sem validação de campo; e a amostragem estratificada aleatória não garante generalização espacial. Como direções futuras, destacam-se validação geológica in situ, validação cruzada espacial, integração multissensor (Landsat-8, Sentinel-2) e investigação de arquiteturas avançadas (ResNet, Transformers).
+
+\bibliographystyle{sbc}
+\bibliography{references}
+
+\end{document}

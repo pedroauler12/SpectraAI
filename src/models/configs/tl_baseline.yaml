@@ -28,7 +28,7 @@ data:
   val_size: 0.2
 
 output:
-  models_dir: outputs/trained_models/
+  models_dir: models/trained_models/
   logs_dir: outputs/training_logs/
   save_model: false
   save_history: false
