@@ -31,8 +31,8 @@ MODEL_OPTIONS = {
 }
 
 THRESHOLD_OPTIONS = {
-    "artifact_default": "Threshold do artefato",
-    "threshold_0.5": "0.5 (mais conservador)",
+    "artifact_default": "Regra recomendada",
+    "threshold_0.5": "Regra mais conservadora",
 }
 
 TIER_ORDER = ["Muito Alto", "Alto", "Medio", "Baixo"]
@@ -219,13 +219,13 @@ def render_page() -> None:
         layout="wide",
     )
 
-    st.title("Painel Operacional")
-    st.caption("Modo de priorizacao de alvos para tomada de decisao de campanha.")
+    st.title("Painel de Decisao")
+    st.caption("Uma visao rapida para decidir quais alvos merecem atencao primeiro.")
 
     shortlist_ids = get_shortlist_state()
 
     with st.sidebar:
-        st.header("Filtros")
+        st.header("Refinar analise")
         model_key = st.selectbox(
             "Modelo",
             options=list(MODEL_OPTIONS.keys()),
@@ -233,15 +233,15 @@ def render_page() -> None:
             index=0,
         )
         threshold_choice = st.radio(
-            "Threshold",
+            "Regra de decisao",
             options=list(THRESHOLD_OPTIONS.keys()),
             format_func=lambda key: THRESHOLD_OPTIONS[key],
             index=0,
         )
-        top_n = st.slider("Top N amostras", min_value=10, max_value=295, value=100, step=5)
-        min_probability = st.slider("Probabilidade minima", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-        sample_query = st.text_input("Buscar amostra")
-        force_refresh = st.checkbox("Recalcular ranking", value=False)
+        top_n = st.slider("Quantidade de amostras", min_value=10, max_value=295, value=100, step=5)
+        min_probability = st.slider("Chance minima", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+        sample_query = st.text_input("Buscar codigo da amostra")
+        force_refresh = st.checkbox("Atualizar lista", value=False)
 
     threshold_mode = normalize_threshold_mode(model_key, threshold_choice)
 
@@ -264,9 +264,9 @@ def render_page() -> None:
 
     filter_col1, filter_col2, filter_col3 = st.columns(3)
     with filter_col1:
-        selected_tiers = st.multiselect("Tier", options=tier_options, default=tier_options)
+        selected_tiers = st.multiselect("Nivel de prioridade", options=tier_options, default=tier_options)
     with filter_col2:
-        selected_labels = st.multiselect("Classe prevista", options=label_options, default=label_options)
+        selected_labels = st.multiselect("Resultado sugerido", options=label_options, default=label_options)
     with filter_col3:
         selected_lithologies = st.multiselect("Litologia", options=lithology_options, default=[])
 
@@ -286,17 +286,17 @@ def render_page() -> None:
     shortlisted_df = shortlist_dataframe(ranking_df, shortlist_ids)
 
     metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
-    metric_col1.metric("Amostras no ranking", total_samples)
-    metric_col2.metric("Amostras visiveis", visible_samples)
-    metric_col3.metric("Probabilidade media visivel", f"{prob_mean:.2%}")
-    metric_col4.metric("Shortlist atual", len(shortlist_ids))
+    metric_col1.metric("Total de amostras", total_samples)
+    metric_col2.metric("Amostras mostradas", visible_samples)
+    metric_col3.metric("Chance media nesta tela", f"{prob_mean:.2%}")
+    metric_col4.metric("Alvos separados", len(shortlist_ids))
 
     focus_options = filtered_df["numero_amostra"].astype(str).tolist()
     focused_sample = st.selectbox(
-        "Amostra em foco",
+        "Amostra em destaque",
         options=focus_options,
         index=0 if focus_options else None,
-        placeholder="Nenhuma amostra disponivel com os filtros atuais",
+        placeholder="Nenhuma amostra encontrada com os filtros atuais",
     ) if focus_options else None
 
     focused_row = None
@@ -305,11 +305,11 @@ def render_page() -> None:
 
     action_col1, action_col2, action_col3 = st.columns([1.0, 1.0, 2.0])
     with action_col1:
-        if focused_sample is not None and st.button("Adicionar a shortlist", disabled=focused_sample in shortlist_ids):
+        if focused_sample is not None and st.button("Separar para campanha", disabled=focused_sample in shortlist_ids):
             shortlist_ids.add(str(focused_sample))
             st.rerun()
     with action_col2:
-        if focused_sample is not None and st.button("Remover da shortlist", disabled=focused_sample not in shortlist_ids):
+        if focused_sample is not None and st.button("Remover da campanha", disabled=focused_sample not in shortlist_ids):
             shortlist_ids.discard(str(focused_sample))
             st.rerun()
     with action_col3:
@@ -319,7 +319,7 @@ def render_page() -> None:
     map_col, detail_col = st.columns([1.05, 0.95], gap="large")
 
     with map_col:
-        st.subheader("Mapa operacional")
+        st.subheader("Mapa de prioridades")
         fmap = make_operational_map(
             filtered_df,
             highlighted_sample=focused_sample,
@@ -334,16 +334,16 @@ def render_page() -> None:
         )
 
     with detail_col:
-        st.subheader("Ficha do alvo")
+        st.subheader("Resumo do alvo")
         if focused_row is None:
-            st.write("Selecione uma amostra em foco para ver o resumo operacional.")
+            st.write("Escolha uma amostra em destaque para ver o resumo.")
         else:
             st.json(build_target_snapshot(focused_row))
 
     table_col, shortlist_col = st.columns([1.2, 0.8], gap="large")
 
     with table_col:
-        st.subheader("Tabela operacional")
+        st.subheader("Tabela de apoio")
         display_df = filtered_df[
             [
                 "rank",
@@ -365,9 +365,9 @@ def render_page() -> None:
             height=620,
             hide_index=True,
             column_config={
-                "shortlist": st.column_config.CheckboxColumn("shortlist", disabled=True),
+                "shortlist": st.column_config.CheckboxColumn("separado", disabled=True),
                 "prob_pos": st.column_config.ProgressColumn(
-                    "prob_pos",
+                    "chance_estimada",
                     format="%.2f",
                     min_value=0.0,
                     max_value=1.0,
@@ -376,9 +376,9 @@ def render_page() -> None:
         )
 
     with shortlist_col:
-        st.subheader("Shortlist de campanha")
+        st.subheader("Alvos separados para campanha")
         if shortlisted_df.empty:
-            st.write("Nenhuma amostra adicionada ainda.")
+            st.write("Nenhum alvo foi separado ainda.")
         else:
             shortlist_view = shortlisted_df[
                 ["rank", "numero_amostra", "prob_pos", "tier", "prioridade_operacional", "recomendacao"]
@@ -398,12 +398,12 @@ def render_page() -> None:
                 },
             )
             st.download_button(
-                "Baixar shortlist",
+                "Baixar lista da campanha",
                 data=shortlisted_df.to_csv(index=False).encode("utf-8"),
                 file_name=f"shortlist_campanha_{model_key}.csv",
                 mime="text/csv",
             )
-            if st.button("Limpar shortlist"):
+            if st.button("Limpar lista"):
                 shortlist_ids.clear()
                 st.rerun()
 

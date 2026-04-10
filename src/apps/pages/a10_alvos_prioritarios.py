@@ -31,8 +31,8 @@ MODEL_OPTIONS = {
 }
 
 THRESHOLD_OPTIONS = {
-    "artifact_default": "Threshold do artefato",
-    "threshold_0.5": "0.5 (mais conservador)",
+    "artifact_default": "Regra recomendada",
+    "threshold_0.5": "Regra mais conservadora",
 }
 
 
@@ -119,15 +119,15 @@ def load_probability_ranking(
 
 def render_page() -> None:
     st.set_page_config(
-        page_title="SpectraAI - Ranking de Probabilidades",
+        page_title="SpectraAI - Ranking de Alvos",
         layout="wide",
     )
 
-    st.title("Ranking de Probabilidades")
-    st.caption("Ranking completo das amostras da base com ordenacao por probabilidade prevista.")
+    st.title("Ranking de Alvos")
+    st.caption("Lista completa das amostras, ordenadas pelas areas com maior chance estimada.")
 
     with st.sidebar:
-        st.header("Filtros")
+        st.header("Refinar lista")
         model_key = st.selectbox(
             "Modelo",
             options=list(MODEL_OPTIONS.keys()),
@@ -135,15 +135,15 @@ def render_page() -> None:
             index=0,
         )
         threshold_choice = st.radio(
-            "Threshold",
+            "Regra de decisao",
             options=list(THRESHOLD_OPTIONS.keys()),
             format_func=lambda key: THRESHOLD_OPTIONS[key],
             index=0,
         )
-        top_n = st.slider("Top N amostras", min_value=10, max_value=295, value=100, step=5)
-        min_probability = st.slider("Probabilidade minima", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-        sample_query = st.text_input("Buscar amostra")
-        force_refresh = st.checkbox("Recalcular ranking", value=False)
+        top_n = st.slider("Quantidade de amostras", min_value=10, max_value=295, value=100, step=5)
+        min_probability = st.slider("Chance minima", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+        sample_query = st.text_input("Buscar codigo da amostra")
+        force_refresh = st.checkbox("Atualizar lista", value=False)
 
     threshold_mode = normalize_threshold_mode(model_key, threshold_choice)
 
@@ -170,19 +170,19 @@ def render_page() -> None:
     prob_mean = float(filtered_df["prob_pos"].mean()) if not filtered_df.empty else 0.0
 
     metric_col1, metric_col2, metric_col3 = st.columns(3)
-    metric_col1.metric("Amostras no ranking", total_samples)
-    metric_col2.metric("Amostras visiveis", visible_samples)
-    metric_col3.metric("Probabilidade media visivel", f"{prob_mean:.2%}")
+    metric_col1.metric("Total de amostras", total_samples)
+    metric_col2.metric("Amostras mostradas", visible_samples)
+    metric_col3.metric("Chance media nesta tela", f"{prob_mean:.2%}")
 
     st.caption(
-        f"Modelo ativo: {MODEL_OPTIONS[model_key]} | "
-        f"threshold: {filtered_df['decision_threshold_name'].iloc[0] if not filtered_df.empty else threshold_mode}"
+        f"Versao ativa: {MODEL_OPTIONS[model_key]} | "
+        f"regra usada: {filtered_df['decision_threshold_name'].iloc[0] if not filtered_df.empty else threshold_mode}"
     )
 
     map_col, table_col = st.columns([1.0, 1.2], gap="large")
 
     with map_col:
-        st.subheader("Mapa do ranking")
+        st.subheader("Mapa das amostras")
         fmap = make_probability_ranking_map(filtered_df)
         st_folium(
             fmap,
@@ -193,7 +193,7 @@ def render_page() -> None:
         )
 
     with table_col:
-        st.subheader("Tabela ranqueada")
+        st.subheader("Tabela de prioridade")
         display_columns = [
             "rank",
             "numero_amostra",
@@ -211,7 +211,7 @@ def render_page() -> None:
             hide_index=True,
             column_config={
                 "prob_pos": st.column_config.ProgressColumn(
-                    "prob_pos",
+                    "chance_estimada",
                     format="%.2f",
                     min_value=0.0,
                     max_value=1.0,
@@ -219,7 +219,7 @@ def render_page() -> None:
             },
         )
         st.download_button(
-            "Baixar CSV filtrado",
+            "Baixar lista em CSV",
             data=filtered_df.to_csv(index=False).encode("utf-8"),
             file_name=f"ranking_probabilidades_{model_key}.csv",
             mime="text/csv",

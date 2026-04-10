@@ -10,7 +10,7 @@ import pytest
 def _load_module():
     pytest.importorskip("streamlit")
 
-    page_path = Path(__file__).resolve().parents[1] / "apps" / "pages" / "a12_explicabilidade_modelo.py"
+    page_path = Path(__file__).resolve().parents[1] / "apps" / "pages" / "a12_entender_uma_amostra.py"
     spec = importlib.util.spec_from_file_location("explainability_page", page_path)
     module = importlib.util.module_from_spec(spec)
     assert spec is not None and spec.loader is not None

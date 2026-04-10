@@ -10,8 +10,8 @@ from streamlit_folium import st_folium
 
 
 THRESHOLD_OPTIONS = {
-    "artifact_default": "Threshold do artefato (recomendado)",
-    "threshold_0.5": "0.5 (mais conservador)",
+    "artifact_default": "Regra recomendada do modelo",
+    "threshold_0.5": "Regra mais conservadora",
 }
 
 QUALITY_MESSAGES = {
@@ -49,7 +49,7 @@ def build_model_catalog(project_root: Path) -> dict[str, dict[str, object]]:
             "label": "Pipeline Final (A11)",
             "available": a11_model_path.exists(),
             "description": (
-                "Modelo final treinado no pipeline end-to-end do A11."
+                "Versao final recomendada para encontrar areas mais promissoras."
                 if a11_model_path.exists()
                 else f"Artefato ausente: {a11_model_path}"
             ),
@@ -58,7 +58,7 @@ def build_model_catalog(project_root: Path) -> dict[str, dict[str, object]]:
             "label": "Transfer Learning (A08)",
             "available": a08_model_path.exists(),
             "description": (
-                "Modelo geoespacial pronto para inferencia direta em chips ASTER 9 bandas."
+                "Versao anterior, util para comparacao historica."
                 if a08_model_path.exists()
                 else f"Artefato ausente: {a08_model_path}"
             ),
@@ -78,7 +78,7 @@ MODEL_CATALOG = build_model_catalog(PROJECT_ROOT)
 
 
 st.set_page_config(
-    page_title="SpectraAI - Demo Geoespacial ASTER",
+    page_title="SpectraAI - Mapa de Analise",
     layout="wide",
 )
 
@@ -187,17 +187,16 @@ def make_base_map(points_df: pd.DataFrame, selected_point: tuple[float, float] |
     return fmap
 
 
-st.title("SpectraAI - Demo Geoespacial ASTER")
+st.title("SpectraAI - Analise de Area")
 st.caption(
-    "Mapa clicavel, modelos A11/A08, previews RGB/false-color e "
-    "checagem simples de qualidade do chip."
+    "Escolha um ponto no mapa para ver a chance estimada da area, imagens de apoio e um resumo simples para decisao."
 )
 
 points_df = load_points_frame(PROJECT_ROOT)
 cache_root = PROJECT_ROOT / "outputs" / "a09_streamlit_cache"
 
 with st.sidebar:
-    st.header("Configuracao")
+    st.header("Como analisar")
 
     model_key = st.selectbox(
         "Modelo",
@@ -205,7 +204,7 @@ with st.sidebar:
         format_func=lambda key: MODEL_CATALOG[key]["label"],
     )
     threshold_mode = st.radio(
-        "Threshold de decisao",
+        "Regra de decisao",
         options=list(THRESHOLD_OPTIONS.keys()),
         format_func=lambda key: THRESHOLD_OPTIONS[key],
         index=0,
@@ -217,30 +216,30 @@ with st.sidebar:
     else:
         st.warning(selected_model_info["description"])
 
-    netrc_path = st.text_input("Caminho do .netrc EarthData", value=str(PROJECT_ROOT / ".netrc"))
-    start_date = st.text_input("Data inicial", value="2000-01-01")
-    end_date = st.text_input("Data final", value="2007-12-31")
-    chip_side_m = st.number_input("Lado do chip (m)", min_value=500, max_value=5000, value=1200, step=100)
-    margin_m = st.number_input("Margem interna (m)", min_value=0, max_value=1000, value=150, step=50)
-    max_granules = st.number_input("Maximo de granules", min_value=1, max_value=25, value=10, step=1)
-    force_refresh = st.checkbox("Forcar novo download", value=False)
-    block_critical_quality = st.checkbox("Bloquear leitura quando qualidade for critica", value=True)
+    netrc_path = st.text_input("Arquivo de acesso EarthData (.netrc)", value=str(PROJECT_ROOT / ".netrc"))
+    start_date = st.text_input("Buscar imagens a partir de", value="2000-01-01")
+    end_date = st.text_input("Buscar imagens ate", value="2007-12-31")
+    chip_side_m = st.number_input("Tamanho da area analisada (m)", min_value=500, max_value=5000, value=1200, step=100)
+    margin_m = st.number_input("Margem interna de seguranca (m)", min_value=0, max_value=1000, value=150, step=50)
+    max_granules = st.number_input("Maximo de imagens para busca", min_value=1, max_value=25, value=10, step=1)
+    force_refresh = st.checkbox("Baixar imagens novamente", value=False)
+    block_critical_quality = st.checkbox("Nao mostrar resultado quando a imagem estiver muito ruim", value=True)
 
-    if st.button("Limpar cache local"):
+    if st.button("Limpar arquivos temporarios"):
         clear_local_cache(cache_root)
         st.cache_data.clear()
         st.cache_resource.clear()
         reset_last_result()
-        st.success("Cache removido.")
+        st.success("Arquivos temporarios removidos.")
 
     st.markdown(
         """
-        **Notas**
-        - O A11 usa o artefato final salvo em `artefatos/a11_pipeline_e2e/outputs/models/`.
-        - O A08 continua disponivel como baseline geoespacial anterior.
-        - O app mostra RGB natural e false-color mineralogico.
-        - A página "Ranking de Probabilidades" mostra o ranking completo das amostras.
-        - MLP/SVM/RF ainda exigem artefatos extras de preprocessamento.
+        **Antes de começar**
+        - O modelo A11 e a melhor versao atual para priorizar areas.
+        - O A08 continua disponivel para comparacao com a abordagem anterior.
+        - O app mostra uma imagem mais natural e outra destacando padroes mineralogicos.
+        - A pagina "Ranking de Alvos" mostra toda a base ordenada.
+        - Alguns modelos antigos ainda nao aparecem aqui porque faltam arquivos auxiliares.
         """
     )
 
@@ -256,7 +255,7 @@ if "last_error" not in st.session_state:
 map_col, result_col = st.columns([1.25, 1.0], gap="large")
 
 with map_col:
-    st.subheader("Mapa interativo")
+    st.subheader("Mapa para escolher o ponto")
     fmap = make_base_map(points_df, st.session_state["selected_point"])
     map_state = st_folium(
         fmap,
@@ -278,24 +277,24 @@ with map_col:
 
     if st.session_state["selected_point"] is not None:
         lat_sel, lon_sel = st.session_state["selected_point"]
-        st.info(f"Ponto selecionado: lat={lat_sel:.6f}, lon={lon_sel:.6f}")
+        st.info(f"Ponto escolhido: lat={lat_sel:.6f}, lon={lon_sel:.6f}")
     else:
-        st.warning("Selecione um ponto no mapa para habilitar a inferencia.")
+        st.warning("Clique no mapa para escolher a area que voce quer analisar.")
 
 
 with result_col:
-    st.subheader("Resultado da inferencia")
+    st.subheader("Leitura da area escolhida")
 
     if st.session_state["selected_point"] is None:
-        st.write("Aguardando selecao de ponto.")
+        st.write("Escolha um ponto no mapa para ver o resultado.")
     else:
         lat_sel, lon_sel = st.session_state["selected_point"]
         can_run = selected_model_info["available"]
 
-        if st.button("Rodar inferencia EarthData", type="primary", disabled=not can_run):
+        if st.button("Analisar esta area", type="primary", disabled=not can_run):
             reset_last_result()
             try:
-                with st.spinner("Buscando granule ASTER, recortando chip e rodando o modelo..."):
+                with st.spinner("Buscando a melhor imagem da area e calculando o resultado..."):
                     bundle = get_inference_bundle(PROJECT_ROOT, model_key, threshold_mode)
                     result = run_point_inference(
                         bundle,
@@ -346,21 +345,20 @@ with result_col:
 
             metric_col1, metric_col2 = st.columns(2)
             with metric_col1:
-                st.metric("Probabilidade positiva", f"{prob_pos:.2%}")
-                st.metric("Modelo", result["model_name"])
+                st.metric("Chance estimada da area", f"{prob_pos:.2%}")
+                st.metric("Versao usada", result["model_name"])
             with metric_col2:
-                st.metric("Classe no threshold do app", pred_threshold_label)
-                st.metric("Classe no threshold 0.5", pred_05_label)
+                st.metric("Leitura recomendada", pred_threshold_label)
+                st.metric("Leitura na regra conservadora", pred_05_label)
 
             st.progress(prob_pos)
             st.caption(
-                f"Threshold ativo: {result['decision_threshold_name']} = {threshold_value:.4f}"
+                f"Regra ativa: {result['decision_threshold_name']} = {threshold_value:.4f}"
             )
 
             if quality_severity == "critical" and block_critical_quality:
                 st.warning(
-                    "O app bloqueou a leitura operacional deste resultado porque a qualidade do chip "
-                    "foi classificada como critica."
+                    "A imagem desta area esta ruim demais para uma leitura confiavel, por isso o app nao recomenda usar este resultado."
                 )
 
             preview_col1, preview_col2 = st.columns(2)
@@ -368,19 +366,19 @@ with result_col:
                 if result.get("preview_rgb_path"):
                     st.image(result["preview_rgb_path"], caption="RGB ASTER (B03N, B02, B01)")
                 else:
-                    st.info("Preview RGB indisponivel.")
+                    st.info("Imagem natural indisponivel.")
             with preview_col2:
                 if result.get("preview_false_color_path"):
                     st.image(
                         result["preview_false_color_path"],
-                        caption="False-color ASTER (B06, B05, B02)",
+                        caption="Imagem de apoio mineralogico",
                     )
                 elif result.get("preview_png_path"):
-                    st.image(result["preview_png_path"], caption="False-color ASTER")
+                    st.image(result["preview_png_path"], caption="Imagem de apoio mineralogico")
                 else:
-                    st.info("Preview false-color indisponivel.")
+                    st.info("Imagem mineralogica indisponivel.")
 
-            st.markdown("**Qualidade do chip**")
+            st.markdown("**Qualidade da imagem usada**")
             quality_metrics = {
                 "severity": quality_severity,
                 "finite_ratio": quality_report.get("finite_ratio"),
@@ -393,11 +391,11 @@ with result_col:
 
             quality_warnings = quality_report.get("warnings") or []
             if quality_warnings:
-                st.markdown("**Alertas de qualidade**")
+                st.markdown("**Pontos de atencao na imagem**")
                 for warning_key in quality_warnings:
                     st.write(f"- {QUALITY_MESSAGES.get(warning_key, warning_key)}")
 
-            st.markdown("**Metadados do granule**")
+            st.markdown("**Dados da imagem usada**")
             st.json(
                 {
                     "granule_id": result.get("granule_id"),
@@ -411,10 +409,10 @@ with result_col:
 
             st.markdown(
                 """
-                **Leitura de confianca**
-                - A probabilidade e mais informativa do que o rotulo isolado.
-                - O threshold_f1 tende a recuperar mais positivos do que o corte em 0.5.
-                - Cena ruim, nuvem, sombra ou bandas pobres podem puxar a probabilidade para baixo.
-                - O app e exploratorio e nao substitui a analise geologica.
+                **Como interpretar**
+                - A chance estimada e mais útil do que um rótulo sozinho.
+                - A regra recomendada costuma encontrar mais áreas promissoras do que a regra conservadora.
+                - Nuvem, sombra ou imagem ruim podem atrapalhar a leitura.
+                - O app ajuda a priorizar áreas, mas nao substitui a avaliacao geologica.
                 """
             )

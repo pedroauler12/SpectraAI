@@ -3,6 +3,14 @@ Módulo de inferência em lote sobre tiles de teste.
 """
 
 from .batch_predict import batch_predict
+from .explainability_analysis import (
+    build_promising_region_clusters,
+    build_campaign_suggestion,
+    build_sample_comparison_table,
+    build_sample_heatmap_points,
+    describe_region_opportunity,
+    haversine_distance_km,
+)
 from .keras_binary_predict import collect_binary_predictions
 from .transfer_geo_inference import (
     A11_RANKING_CACHE_FILENAME,
@@ -30,7 +38,13 @@ from .transfer_geo_inference import (
 
 __all__ = [
     "batch_predict",
+    "build_promising_region_clusters",
+    "build_campaign_suggestion",
+    "build_sample_comparison_table",
+    "build_sample_heatmap_points",
+    "describe_region_opportunity",
     "collect_binary_predictions",
+    "haversine_distance_km",
     "A11_RANKING_CACHE_FILENAME",
     "DEFAULT_BAND_ORDER",
     "DEFAULT_CLASS_NAMES",
