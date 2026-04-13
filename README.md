@@ -27,6 +27,28 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 
 ---
 
+## Sumário
+
+- [Grupo](#-grupo)
+- [Integrantes](#-integrantes)
+- [Professores](#-professores)
+- [Descrição do Projeto](#-descrição-do-projeto)
+- [Objetivos do Módulo](#-objetivos-do-módulo)
+- [Objetivos do Projeto](#-objetivos-do-projeto)
+- [Estrutura do Repositório](#-estrutura-do-repositório)
+- [Entrega A11](#entrega-a11)
+- [Regras do Projeto](#-regras-do-projeto)
+- [Como Executar](#️-como-executar)
+- [Tutorial em Vídeo](#-tutorial-em-vídeo)
+- [Aplicação Interativa](#️-aplicação-interativa)
+- [Artefatos por Sprint](#-artefatos-por-sprint)
+- [Boas Práticas](#-boas-práticas-de-trabalho-em-equipe)
+- [Tecnologias](#-tecnologias)
+- [Reprodutibilidade](#-reprodutibilidade)
+- [Licença](#-licença)
+
+---
+
 ## 👥 Grupo
 **g01 — SpectraAI**
 
@@ -88,6 +110,8 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ```bash
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
+│   └── figuras/           # figuras do artigo
+├── docs/                  # documentação auxiliar (flowchart, notas técnicas)
 ├── src/                   # código modular reutilizável (.py)
 │   ├── apps/              # aplicações interativas (Streamlit)
 │   ├── evaluation/        # módulo de avaliação de modelos
@@ -100,7 +124,7 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 │   ├── figures/           # gráficos e visualizações
 │   ├── metrics/           # métricas e JSONs de avaliação
 │   └── predictions/       # predições exportadas
-├── slides/                # apresentações do projeto
+├── slides/                # apresentações do projeto (Review_SprintN.pdf)
 ├── assets/                # imagens, logos e recursos estáticos
 ├── Makefile
 ├── run_pipeline.py        # utilitário de execução iterativa do pipeline
