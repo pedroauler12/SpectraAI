@@ -239,7 +239,7 @@ def test_probability_ranking_page_helpers_smoke(tmp_path: Path):
     pytest.importorskip("streamlit")
     folium = pytest.importorskip("folium")
 
-    page_path = Path(__file__).resolve().parents[2] / "apps" / "pages" / "a10_ranking_probabilidades.py"
+    page_path = Path(__file__).resolve().parents[1] / "apps" / "pages" / "a10_ranking_probabilidades.py"
     spec = importlib.util.spec_from_file_location("probability_ranking_page", page_path)
     module = importlib.util.module_from_spec(spec)
     assert spec is not None and spec.loader is not None
