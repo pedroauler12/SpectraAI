@@ -27,6 +27,27 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 
 ---
 
+## Sumário
+
+- [Grupo](#-grupo)
+- [Integrantes](#-integrantes)
+- [Descrição do Projeto](#-descrição-do-projeto)
+- [Objetivos do Módulo](#-objetivos-do-módulo)
+- [Objetivos do Projeto](#-objetivos-do-projeto)
+- [Estrutura do Repositório](#-estrutura-do-repositório)
+- [Entrega A11](#entrega-a11)
+- [Regras do Projeto](#-regras-do-projeto)
+- [Como Executar](#️-como-executar)
+- [Tutorial em Vídeo](#️-tutorial-em-vídeo)
+- [Aplicação Interativa](#️-aplicação-interativa)
+- [Artefatos por Sprint](#-artefatos-por-sprint)
+- [Boas Práticas de Trabalho em Equipe](#-boas-práticas-de-trabalho-em-equipe)
+- [Tecnologias](#-tecnologias)
+- [Reprodutibilidade](#-reprodutibilidade)
+- [Licença](#-licença)
+
+---
+
 ## 👥 Grupo
 **g01 — SpectraAI**
 
@@ -88,11 +109,15 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ```bash
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
+│   └── figuras/           # figuras do artigo
 ├── src/                   # código modular reutilizável (.py)
 │   ├── apps/              # aplicações interativas (Streamlit)
 │   ├── evaluation/        # módulo de avaliação de modelos
 │   └── tests/             # testes automatizados (pytest)
 ├── notebooks/             # exploração, experimentos e narrativa
+├── docs/                  # documentação técnica auxiliar
+│   ├── flowchart.md       # diagrama de fluxo da arquitetura
+│   └── normalization_docs.md
 ├── data/                  # dados de entrada
 ├── models/                # modelos treinados/checkpoints
 │   └── trained_models/    # experimentos de treino (configs e histórico)
@@ -100,10 +125,11 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 │   ├── figures/           # gráficos e visualizações
 │   ├── metrics/           # métricas e JSONs de avaliação
 │   └── predictions/       # predições exportadas
-├── slides/                # apresentações do projeto
+├── scripts/               # utilitários de execução e automação
+│   └── run_pipeline.py    # entrypoint iterativo de desenvolvimento
+├── slides/                # apresentações do projeto (Review_SprintN.pdf)
 ├── assets/                # imagens, logos e recursos estáticos
 ├── Makefile
-├── run_pipeline.py        # utilitário de execução iterativa do pipeline
 ├── requirements.txt       # dependências de produção
 ├── requirements-dev.txt   # dependências de desenvolvimento (pytest, etc.)
 └── README.md
@@ -116,7 +142,7 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 A entrega final reproduzivel do pipeline end-to-end esta em
 `artefatos/a11_pipeline_e2e/`.
 
-> **Nota:** `run_pipeline.py` na raiz e um utilitario de desenvolvimento
+> **Nota:** `scripts/run_pipeline.py` e um utilitario de desenvolvimento
 > para experimentos iterativos. O entrypoint oficial da entrega A11 e
 > `artefatos/a11_pipeline_e2e/main.py`, executado via modulo conforme
 > documentado abaixo.
@@ -202,7 +228,7 @@ jupyter notebook
 
 ### 5️⃣ Executar pipeline iterativo de desenvolvimento
 ```bash
-python run_pipeline.py
+python scripts/run_pipeline.py
 ```
 
 > Para a entrega oficial reprodutível (A11), use o comando abaixo (ver [Entrega A11](#entrega-a11)):
