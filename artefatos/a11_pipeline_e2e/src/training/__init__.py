@@ -8,7 +8,7 @@ from typing import Any
 from tensorflow import keras
 
 from src.models.transfer_experiment_runner import TransferLearningExperimentRunner
-from src.reprodutibilidade import set_global_seed
+from src.utils.reprodutibilidade import set_global_seed
 
 
 def _to_test_metrics(metrics: dict[str, Any]) -> dict[str, Any]:

@@ -2,7 +2,7 @@
 Controles globais de reprodutibilidade para experimentos de ML.
 
 Uso:
-    from src.reprodutibilidade import set_global_seed, stratified_split
+    from src.utils.reprodutibilidade import set_global_seed, stratified_split
 
     set_global_seed(42)
 

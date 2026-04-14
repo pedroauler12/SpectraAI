@@ -303,7 +303,7 @@ explicabilidade e planejamento de campanha.
 Da raiz do repositório:
 
 ```bash
-streamlit run src/apps/a09_geo_demo.py
+streamlit run app/a09_geo_demo.py
 ```
 
 ### Páginas principais da demo

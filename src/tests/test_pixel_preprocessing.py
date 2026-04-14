@@ -11,7 +11,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-from src.pixel_preprocessing import (
+from src.preprocessamento.pixel_preprocessing import (
     prepare_pixel_data,
     standardize_bands,
     apply_pca,

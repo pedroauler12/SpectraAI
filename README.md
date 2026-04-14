@@ -112,8 +112,9 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── artigo/                # artigo científico (markdown + PDF)
 │   └── figuras/           # figuras do artigo
 ├── docs/                  # documentação auxiliar (flowchart, notas técnicas)
+├── app/                   # aplicações interativas (Streamlit)
+│   └── pages/             # páginas da aplicação multipage
 ├── src/                   # código modular reutilizável (.py)
-│   ├── apps/              # aplicações interativas (Streamlit)
 │   ├── evaluation/        # módulo de avaliação de modelos
 │   └── tests/             # testes automatizados (pytest)
 ├── notebooks/             # exploração, experimentos e narrativa
@@ -308,13 +309,13 @@ para exploração visual, leitura dos alvos e apoio à decisão.
 Da raiz do repositório:
 
 ```bash
-streamlit run src/apps/a09_geo_demo.py
+streamlit run app/a09_geo_demo.py
 ```
 
 Se houver problema com backend gráfico:
 
 ```bash
-MPLBACKEND=Agg streamlit run src/apps/a09_geo_demo.py
+MPLBACKEND=Agg streamlit run app/a09_geo_demo.py
 ```
 
 ### O que existe no app

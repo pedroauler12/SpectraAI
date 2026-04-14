@@ -8,7 +8,7 @@ Este módulo contém funções para:
 - Análise de loadings dos componentes principais
 
 Exemplo de uso:
-    >>> from src.pixel_preprocessing import prepare_pixel_data, standardize_bands, apply_pca
+    >>> from src.preprocessamento.pixel_preprocessing import prepare_pixel_data, standardize_bands, apply_pca
     >>> df_pixels = prepare_pixel_data(df, band_names=['B1', 'B2', 'B3', 'B4'])
     >>> df_standardized = standardize_bands(df_pixels, ['B1', 'B2', 'B3', 'B4'])
     >>> df_pca, pca_model = apply_pca(df_standardized, ['B1', 'B2', 'B3', 'B4'])
@@ -458,7 +458,7 @@ def prepare_for_neural_network(
         
     Example
     -------
-    >>> from src.pixel_preprocessing import apply_pca, prepare_for_neural_network
+    >>> from src.preprocessamento.pixel_preprocessing import apply_pca, prepare_for_neural_network
     >>> df_pca, pca_model = apply_pca(df_standardized, band_names)
     >>> 
     >>> # Sem target (apenas features PCA)

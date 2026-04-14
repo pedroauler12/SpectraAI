@@ -8,7 +8,7 @@ import pandas as pd
 import yaml
 
 from src.models.cnn_data_prep import prepare_grouped_cnn_splits
-from src.reprodutibilidade import set_global_seed
+from src.utils.reprodutibilidade import set_global_seed
 
 
 def load_pipeline_config(config_path: str | Path) -> dict[str, Any]:
