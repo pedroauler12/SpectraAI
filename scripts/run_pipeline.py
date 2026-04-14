@@ -189,7 +189,7 @@ def main() -> None:
 
     # Carregar config para obter seed antes de qualquer operação aleatória
     from src.models.cnn_config import load_config as _load_config
-    from src.reprodutibilidade import set_global_seed
+    from src.utils.reprodutibilidade import set_global_seed
     _cfg = _load_config(args.config)
     set_global_seed(_cfg.get("seed", 42))
 

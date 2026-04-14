@@ -18,4 +18,4 @@ run-a11:
 	python -m artefatos.a11_pipeline_e2e
 
 consolidate-a11-metrics:
-	python -m src.consolidate_a11_metrics
+	python -m src.utils.consolidate_a11_metrics

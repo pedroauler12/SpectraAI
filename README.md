@@ -31,6 +31,7 @@ Projeto acadêmico desenvolvido em parceria com a Frontera Minerals
 
 - [Grupo](#-grupo)
 - [Integrantes](#-integrantes)
+- [Professores](#-professores)
 - [Descrição do Projeto](#-descrição-do-projeto)
 - [Objetivos do Módulo](#-objetivos-do-módulo)
 - [Objetivos do Projeto](#-objetivos-do-projeto)
@@ -110,8 +111,9 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 ├── artefatos/             # entregas formais de cada sprint
 ├── artigo/                # artigo científico (markdown + PDF)
 │   └── figuras/           # figuras do artigo
+├── app/                   # aplicações interativas (Streamlit)
+│   └── pages/             # páginas da aplicação multipage
 ├── src/                   # código modular reutilizável (.py)
-│   ├── apps/              # aplicações interativas (Streamlit)
 │   ├── evaluation/        # módulo de avaliação de modelos
 │   └── tests/             # testes automatizados (pytest)
 ├── notebooks/             # exploração, experimentos e narrativa
@@ -125,8 +127,6 @@ Defina metas técnicas claras e mensuráveis para o seu sistema.
 │   ├── figures/           # gráficos e visualizações
 │   ├── metrics/           # métricas e JSONs de avaliação
 │   └── predictions/       # predições exportadas
-├── scripts/               # utilitários de execução e automação
-│   └── run_pipeline.py    # entrypoint iterativo de desenvolvimento
 ├── slides/                # apresentações do projeto (Review_SprintN.pdf)
 ├── assets/                # imagens, logos e recursos estáticos
 ├── Makefile
