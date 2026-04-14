@@ -105,17 +105,17 @@ Tabela 2 – Métricas do modelo final (A11) no conjunto de teste. Fonte: Autore
 
 &emsp;&emsp;A matriz de confusão (Figura 1) revela que o modelo classificou corretamente 52 das 59 amostras (TN=32, FP=4, FN=3, TP=20). A análise dos erros residuais é tão informativa quanto os acertos: os 3 falsos negativos representam áreas com potencial de REE não detectadas — o erro de maior custo operacional, pois implica oportunidades de prospecção descartadas. Os 4 falsos positivos, por sua vez, correspondem a mobilização de campo em áreas estéreis, cujo custo é recuperável. Essa assimetria justifica o uso conjunto de ROC-AUC e PR-AUC como métricas de avaliação, e sugere que, em contexto operacional, um limiar de decisão levemente abaixo de 0,5 poderia reduzir falsos negativos ao custo de poucos falsos positivos adicionais. As curvas ROC (AUC=0,92) e Precision-Recall (AP=0,86), na Figura 2, corroboram essa flexibilidade: o modelo mantém alta precisão mesmo em regimes de alto recall, o que é essencial para sua aplicação como ferramenta de triagem prospectiva.
 
-![Figura 1: Matriz de Confusão do Modelo Final (A11) — Conjunto de Teste](../outputs/a11_pipeline_e2e/confusion_matrix.png)
+![Figura 1: Matriz de Confusão do Modelo Final (A11) — Conjunto de Teste](figuras/confusion_matrix.png)
 *Figura 1. Matriz de confusão do modelo MobileNetV2 final no conjunto de teste (n=59). TN=32, FP=4, FN=3, TP=20.*
 
-![Figura 2: Curvas ROC e Precision-Recall do Modelo Final (A11)](../outputs/a11_pipeline_e2e/roc_pr_curves.png)
+![Figura 2: Curvas ROC e Precision-Recall do Modelo Final (A11)](figuras/roc_pr_curves.png)
 *Figura 2. Curvas ROC (AUC=0,92) e Precision-Recall (AP=0,86) do modelo final no conjunto de teste.*
 
 ### 5.3 Interpretabilidade via Grad-CAM
 
 &emsp;&emsp;A Figura 3 apresenta mapas de ativação Grad-CAM que visualizam quais regiões espaciais o modelo MobileNetV2 prioriza ao fazer predições. A visualização sobrepõe os mapas de calor a um chip ASTER em falsa cor de uma amostra da classe positiva, comparando as ativações para as predições de cada classe. O mapa da classe positiva revela ativações concentradas em transições espectrais coerentes e bordas espaciais pronunciadas, enquanto o mapa da classe negativa apresenta padrão mais disperso e difuso. Essa concentração não é trivial: ela indica que o modelo aprendeu a distinguir estruturas de alteração hidrotermal — e não artefatos de iluminação ou bordas de cena — como sinal discriminativo, o que é consistente com o conhecimento geológico de que bandas SWIR são sensíveis a óxidos e argilas associados a REE. A convergência entre o comportamento do modelo e o conhecimento de domínio reforça a confiança nas predições e viabiliza sua auditoria por especialistas, condição necessária para adoção operacional do pipeline.
 
-![Figura 3: Mapas Grad-CAM do Modelo Final — Comparação entre Classes](../outputs/a09_interpretabilidade_visualizacao/gradcam_comparativo.png)
+![Figura 3: Mapas Grad-CAM do Modelo Final — Comparação entre Classes](figuras/gradcam_comparativo.png)
 *Figura 3. Mapas de ativação Grad-CAM sobrepostos a chip ASTER em falsa cor (classe real: positiva). À esquerda, imagem original; ao centro, ativação para predição negativa (P=0,527); à direita, ativação para predição positiva (P=0,473), com foco em transições espectrais coerentes.*
 
 ### 5.4 Discussão
